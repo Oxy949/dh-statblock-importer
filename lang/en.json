@@ -195,6 +195,16 @@
       "features": "Features",
       "description": "Description"
     },
+    "Actions": {
+      "attack": "Attack",
+      "damageFormula": "Damage ({formula})",
+      "markStress": "Mark Stress",
+      "markStressValue": "Mark Stress: {value}",
+      "spendFear": "Spend Fear",
+      "spendFearValue": "Spend Fear: {value}",
+      "spendHope": "Spend Hope",
+      "spendHopeValue": "Spend Hope: {value}"
+    },
     "CodeDialog": {
       "Title": "Feature Code Generator",
       "instructions": "Generated code for <strong>{count}</strong> feature(s). Copy this into your module to register the features in Daggerheart.",

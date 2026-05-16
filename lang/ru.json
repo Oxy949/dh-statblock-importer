@@ -195,6 +195,16 @@
       "features": "Особенности",
       "description": "Описание"
     },
+    "Actions": {
+      "attack": "Атака",
+      "damageFormula": "Урон ({formula})",
+      "markStress": "Отметить Стресс",
+      "markStressValue": "Отметить Стресс: {value}",
+      "spendFear": "Потратить Страх",
+      "spendFearValue": "Потратить Страх: {value}",
+      "spendHope": "Потратить Надежду",
+      "spendHopeValue": "Потратить Надежду: {value}"
+    },
     "CodeDialog": {
       "Title": "Генератор кода особенностей",
       "instructions": "Сгенерирован код для особенностей: <strong>{count}</strong>. Вставьте его в свой модуль, чтобы зарегистрировать особенности в Daggerheart.",

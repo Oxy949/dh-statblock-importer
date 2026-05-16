@@ -1320,7 +1320,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
    * Detects and splits multiple statblocks (Actors) based on "Tier X".
    */
   static splitStatblocks(text) {
-    text = TextNormalizer.clean(text);
+    text = StatblockImporter._normalizeActorStatblockText(text);
     const separatorMode = game.settings.get("dh-statblock-importer", "separatorMode") || "blankLine";
 
     // If using === separator, split by that first
@@ -1348,6 +1348,284 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       if (blockText.length > 0) blocks.push(blockText);
     }
     return blocks;
+  }
+
+  static _normalizeActorStatblockText(text) {
+      if (!text) return text;
+
+      const cleaned = TextNormalizer.clean(text);
+      let inFeatures = false;
+
+      return cleaned
+          .split("\n")
+          .map(line => {
+              const actorLine = StatblockImporter._normalizeActorStatblockLine(line);
+              if (/^Tier\s+\d+\s+/i.test(actorLine)) inFeatures = false;
+              if (/^FEATURES:?$/i.test(actorLine)) {
+                  inFeatures = true;
+                  return actorLine;
+              }
+              return inFeatures ? StatblockImporter._normalizeFeatureStatblockLine(line) : actorLine;
+          })
+          .join("\n")
+          .trim();
+  }
+
+  static _normalizeActorStatblockLine(line) {
+      let normalized = StatblockImporter._stripStatblockMarkdown(line);
+      if (!normalized) return normalized;
+
+      const sectionKey = normalized.toLowerCase().replace(/ё/g, "е").replace(/:$/, "").trim();
+      if (/^(свойства|особенности|способности|features)$/.test(sectionKey)) {
+          return "FEATURES";
+      }
+
+      normalized = normalized.replace(/^Tier\s+(\d+)\s*,\s*/i, "Tier $1 ");
+
+      const ruTierMatch = normalized.match(/^Тир\s+(\d+)\s*,?\s*(.+)$/i);
+      if (ruTierMatch) {
+          let rawType = ruTierMatch[2].trim();
+          let hordeHp = null;
+          const hordeMatch = rawType.match(/^(.+?)\s*\(\s*(\d+)\s*\/\s*(?:HP|ХП|ОЗ|рана|раны|ран)\s*\)$/i);
+          if (hordeMatch) {
+              rawType = hordeMatch[1].trim();
+              hordeHp = hordeMatch[2];
+          }
+
+          const canonicalType = StatblockImporter._canonicalActorStatblockType(rawType);
+          return hordeHp
+              ? `Tier ${ruTierMatch[1]} ${canonicalType} (${hordeHp}/HP)`
+              : `Tier ${ruTierMatch[1]} ${canonicalType}`;
+      }
+
+      normalized = StatblockImporter._replaceLocalizedStatLabels(normalized);
+      normalized = StatblockImporter._replaceLocalizedFeatureForms(normalized);
+
+      const statLikeLine = normalized.includes("|")
+          || /^(?:Difficulty|Thresholds|HP|Stress|ATK|Experience):/i.test(normalized)
+          || StatblockImporter._isLocalizedRangeSegment(normalized)
+          || /^\d*d\d+(?:\s*[+-]\s*\d+)?\s+/i.test(normalized)
+          || /^\d+\s+/.test(normalized);
+
+      if (statLikeLine) {
+          normalized = StatblockImporter._replaceLocalizedRanges(normalized);
+          normalized = StatblockImporter._replaceLocalizedDamageTypes(normalized);
+      }
+
+      return normalized.replace(/[ \t]+/g, " ").trim();
+  }
+
+  static _stripStatblockMarkdown(line) {
+      return String(line ?? "")
+          .replace(/^#{1,6}\s*/, "")
+          .replace(/^\s*[-*+]\s+/, "")
+          .replace(/`([^`]+)`/g, "$1")
+          .replace(/\*\*([^*]+)\*\*/g, "$1")
+          .replace(/__([^_]+)__/g, "$1")
+          .replace(/\*([^*]+)\*/g, "$1")
+          .trim();
+  }
+
+  static _normalizeFeatureStatblockLine(line) {
+      const normalized = String(line ?? "").trim();
+      if (!normalized) return normalized;
+
+      const withoutBullet = normalized.replace(/^\s*[-*+]\s+/, "");
+      const header = StatblockImporter._parseFeatureHeaderLine(withoutBullet);
+      if (!header) return normalized;
+
+      return `${header.name} - ${header.form}${header.description ? `: ${header.description}` : ""}`;
+  }
+
+  static _parseFeatureHeaderLine(line) {
+      const boldHeaderMatch = line.match(/^(?:\*\*|__)(.+?)\s*-\s*([^*_]+?)\s*:?(?:\*\*|__)\s*:?\s*(.*)$/i);
+      const plainHeaderMatch = line.match(/^(.+?)\s*-\s*([^:]+?)(?::\s*(.*))?$/i);
+      const match = boldHeaderMatch || plainHeaderMatch;
+      if (!match) return null;
+
+      const form = StatblockImporter._canonicalFeatureForm(match[2]);
+      if (!form) return null;
+
+      return {
+          name: StatblockImporter._stripStatblockMarkdown(match[1]),
+          form,
+          description: (match[3] || "").trim()
+      };
+  }
+
+  static _canonicalFeatureForm(form) {
+      const key = StatblockImporter._stripStatblockMarkdown(form).toLowerCase().replace(/ё/g, "е").trim();
+      const formMap = {
+          "action": "Action",
+          "действие": "Action",
+          "активное": "Action",
+          "reaction": "Reaction",
+          "реакция": "Reaction",
+          "passive": "Passive",
+          "пассивное": "Passive",
+          "пассивная": "Passive",
+          "пассивный": "Passive",
+          "пассивно": "Passive"
+      };
+
+      return formMap[key] || null;
+  }
+
+  static _canonicalActorStatblockType(type) {
+      const key = String(type ?? "").toLowerCase().replace(/ё/g, "е").replace(/\./g, "").trim();
+      const typeMap = {
+          "громила": "Bruiser",
+          "боец": "Bruiser",
+          "крушитель": "Bruiser",
+          "орда": "Horde",
+          "лидер": "Leader",
+          "главарь": "Leader",
+          "миньон": "Minion",
+          "приспешник": "Minion",
+          "стрелок": "Ranged",
+          "дальний": "Ranged",
+          "дальнобойный": "Ranged",
+          "скрытник": "Skulk",
+          "лазутчик": "Skulk",
+          "плут": "Skulk",
+          "социальный": "Social",
+          "одиночка": "Solo",
+          "соло": "Solo",
+          "рядовой": "Standard",
+          "стандартный": "Standard",
+          "обычный": "Standard",
+          "поддержка": "Support",
+          "исследование": "Exploration",
+          "исследовательское": "Exploration",
+          "переход": "Traversal",
+          "перемещение": "Traversal",
+          "путешествие": "Traversal",
+          "событие": "Event"
+      };
+
+      return typeMap[key] || titleCase(type);
+  }
+
+  static _replaceLocalizedStatLabels(line) {
+      const replacements = [
+          [/(\||^)\s*Мотивы\s+(?:и|&)\s+тактики\s*:/gi, "$1 Motives & Tactics:"],
+          [/(\||^)\s*Импульсы\s*:/gi, "$1 Impulses:"],
+          [/(\||^)\s*Возможные\s+противники\s*:/gi, "$1 Potential Adversaries:"],
+          [/(\||^)\s*Сложность\s*:/gi, "$1 Difficulty:"],
+          [/(\||^)\s*Пороги(?:\s+урона)?\s*:/gi, "$1 Thresholds:"],
+          [/(\||^)\s*(?:Раны|ОЗ|ХП)\s*:/gi, "$1 HP:"],
+          [/(\||^)\s*Стресс\s*:/gi, "$1 Stress:"],
+          [/(\||^)\s*(?:Модификатор\s+атаки|Мод\.?\s*атаки|Атака)\s*:/gi, "$1 ATK:"],
+          [/(\||^)\s*Опыт\s*:/gi, "$1 Experience:"]
+      ];
+
+      return replacements.reduce((current, [pattern, replacement]) => current.replace(pattern, replacement), line);
+  }
+
+  static _replaceLocalizedFeatureForms(line) {
+      return line
+          .replace(/\s*-\s*(?:действие|активное)\s*:/i, " - Action:")
+          .replace(/\s*-\s*(?:реакция)\s*:/i, " - Reaction:")
+          .replace(/\s*-\s*(?:пассивное|пассивная|пассивный|пассивно)\s*:/i, " - Passive:");
+  }
+
+  static _replaceLocalizedRanges(line) {
+      const replacements = [
+          [/очень\s+далек(?:о|ая|ой|ую|ие|их|им|ими|ом|ую)/gi, "Very Far"],
+          [/очень\s+близк(?:о|ая|ой|ую|ие|их|им|ими|ом|ую)/gi, "Very Close"],
+          [/(?:вплотную|в\s+упор)/gi, "Melee"],
+          [/ближн(?:яя|ей|юю|ий|его|ем|ее|ие|их|им|ими|ую)|близк(?:о|ая|ой|ую|ие|их|им|ими|ом)/gi, "Close"],
+          [/средн(?:яя|ей|юю|ий|его|ем|ее|ие|их|им|ими|ую)|средне/gi, "Far"],
+          [/дальн(?:яя|ей|юю|ий|его|ем|ее|ие|их|им|ими|ую)|далеко/gi, "Far"]
+      ];
+
+      return replacements.reduce((current, [pattern, replacement]) => current.replace(pattern, replacement), line);
+  }
+
+  static _replaceLocalizedDamageTypes(line) {
+      return line
+          .replace(/(^|[\s|,;])физ(?:\.|ический|ическая|ическое|ического|ических|ическим|ическую)?(?=$|[\s|,;.])/gi, "$1phy")
+          .replace(/(^|[\s|,;])маг(?:\.|ический|ическая|ическое|ического|ических|ическим|ическую)?(?=$|[\s|,;.])/gi, "$1mag");
+  }
+
+  static _isLocalizedRangeSegment(line) {
+      return /^.+:\s*(?:очень\s+далек(?:о|ая|ой|ую|ие|их|им|ими|ом)|очень\s+близк(?:о|ая|ой|ую|ие|их|им|ими|ом)|вплотную|в\s+упор|ближн(?:яя|ей|юю|ий|его|ем|ее|ие|их|им|ими|ую)|близк(?:о|ая|ой|ую|ие|их|им|ими|ом)|средн(?:яя|ей|юю|ий|его|ем|ее|ие|их|им|ими|ую)|средне|дальн(?:яя|ей|юю|ий|его|ем|ее|ие|их|им|ими|ую)|далеко)$/i.test(line);
+  }
+
+  static _detectedActionName(kind, value = null, formula = null) {
+      switch (kind) {
+          case "attack":
+              return localizeKey("DAGGERHEART.ACTIONS.TYPES.attack.name", localize("Actions.attack"));
+          case "damage":
+              return format("Actions.damageFormula", { formula });
+          case "markStress":
+              return value === 1
+                  ? localize("Actions.markStress")
+                  : format("Actions.markStressValue", { value });
+          case "spendFear":
+              return value === 1
+                  ? localize("Actions.spendFear")
+                  : format("Actions.spendFearValue", { value });
+          case "spendHope":
+              return value === 1
+                  ? localize("Actions.spendHope")
+                  : format("Actions.spendHopeValue", { value });
+          default:
+              return titleCase(kind);
+      }
+  }
+
+  static _formatFeatureDescriptionHtml(description) {
+      if (!description) return "";
+
+      const paragraphs = String(description)
+          .replace(/<\/p>\s*<p>/gi, "\n")
+          .split(/\n+|<\/p>/i)
+          .map(part => part.replace(/^<p>/i, "").trim())
+          .filter(part => part.length > 0);
+
+      const htmlParts = [];
+      let listItems = [];
+
+      const flushList = () => {
+          if (listItems.length === 0) return;
+          htmlParts.push(`<ul>${listItems.join("")}</ul>`);
+          listItems = [];
+      };
+
+      for (const paragraph of paragraphs) {
+          const bulletMatch = paragraph.match(/^(?:[-*]|\u2022)\s+(.*)$/);
+          if (bulletMatch) {
+              listItems.push(`<li>${StatblockImporter._markdownInlineToHtml(bulletMatch[1].trim())}</li>`);
+              continue;
+          }
+
+          flushList();
+          htmlParts.push(`<p>${StatblockImporter._markdownInlineToHtml(paragraph)}</p>`);
+      }
+
+      flushList();
+      return htmlParts.join("");
+  }
+
+  static _markdownInlineToHtml(text) {
+      return String(text ?? "")
+          .replace(/`([^`]+)`/g, "<code>$1</code>")
+          .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+          .replace(/__([^_]+)__/g, "<strong>$1</strong>")
+          .replace(/(^|[\s(])\*([^*\n]+)\*(?=$|[\s).,;:!?])/g, "$1<em>$2</em>")
+          .replace(/(^|[\s(])_([^_\n]+)_(?=$|[\s).,;:!?])/g, "$1<em>$2</em>");
+  }
+
+  static _plainTextForActionDetection(text) {
+      return String(text ?? "")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/&nbsp;/g, " ")
+          .replace(/&amp;/g, "&")
+          .replace(/&lt;/g, "<")
+          .replace(/&gt;/g, ">")
+          .replace(/\s+/g, " ")
+          .trim();
   }
 
   /**
@@ -1393,12 +1671,13 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
    */
   static detectActionsInDescription(description) {
       const detectedActions = {};
+      const searchText = StatblockImporter._plainTextForActionDetection(description);
 
-      // Detect "Mark Stress" / "Mark a Stress" / "Mark 1 Stress" / "Mark 2 Stress"
-      const stressMatch = description.match(/mark\s+(a\s+|(\d+)\s+)?stress/i);
+      // Detect "Mark Stress" / "Mark 1 Stress" and common Russian equivalents.
+      const stressMatch = searchText.match(/(?:mark|spend|получите|получить|отметьте|отметить|потратьте|потратить)\s+(?:a\s+|one\s+|(\d+)\s+|один\s+|одну\s+)?(?:stress|стресс(?:а)?)/i);
       if (stressMatch) {
-          const stressValue = stressMatch[2] ? parseInt(stressMatch[2], 10) : 1;
-          const stressName = stressValue === 1 ? "Mark Stress" : `Mark ${stressValue} Stress`;
+          const stressValue = stressMatch[1] ? parseInt(stressMatch[1], 10) : 1;
+          const stressName = StatblockImporter._detectedActionName("markStress", stressValue);
           const actionId = foundry.utils.randomID(16);
           detectedActions[actionId] = {
               type: "effect",
@@ -1426,11 +1705,11 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
           };
       }
 
-      // Detect "Spend Fear" / "Spend a Fear" / "Spend 1 Fear" / "Spend 2 Fear"
-      const fearMatch = description.match(/spend\s+(a\s+|(\d+)\s+)?fear/i);
+      // Detect "Spend Fear" / "Spend 1 Fear" and common Russian equivalents.
+      const fearMatch = searchText.match(/(?:spend|потратьте|потратить)\s+(?:a\s+|one\s+|(\d+)\s+|один\s+|одну\s+)?(?:fear|страх(?:а)?)/i);
       if (fearMatch) {
-          const fearValue = fearMatch[2] ? parseInt(fearMatch[2], 10) : 1;
-          const fearName = fearValue === 1 ? "Spend Fear" : `Spend ${fearValue} Fear`;
+          const fearValue = fearMatch[1] ? parseInt(fearMatch[1], 10) : 1;
+          const fearName = StatblockImporter._detectedActionName("spendFear", fearValue);
           const actionId = foundry.utils.randomID(16);
           detectedActions[actionId] = {
               type: "effect",
@@ -1458,11 +1737,11 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
           };
       }
 
-      // Detect "Spend Hope" / "Spend a Hope" / "Spend 1 Hope" / "Spend 2 Hope"
-      const hopeMatch = description.match(/spend\s+(a\s+|(\d+)\s+)?hope/i);
+      // Detect "Spend Hope" / "Spend 1 Hope" and common Russian equivalents.
+      const hopeMatch = searchText.match(/(?:spend|потратьте|потратить)\s+(?:a\s+|one\s+|(\d+)\s+|один\s+|одну\s+)?(?:hope|надежд[уы]?)/i);
       if (hopeMatch) {
-          const hopeValue = hopeMatch[2] ? parseInt(hopeMatch[2], 10) : 1;
-          const hopeName = hopeValue === 1 ? "Spend a Hope" : `Spend ${hopeValue} Hope`;
+          const hopeValue = hopeMatch[1] ? parseInt(hopeMatch[1], 10) : 1;
+          const hopeName = StatblockImporter._detectedActionName("spendHope", hopeValue);
           const actionId = foundry.utils.randomID(16);
           detectedActions[actionId] = {
               type: "effect",
@@ -1494,7 +1773,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       const traits = ["Strength", "Instinct", "Knowledge", "Finesse", "Presence", "Agility"];
       for (const trait of traits) {
           const reactionRollRegex = new RegExp(`${trait}\\s+Reaction\\s+Roll`, "i");
-          if (reactionRollRegex.test(description)) {
+          if (reactionRollRegex.test(searchText)) {
               const actionId = foundry.utils.randomID(16);
               detectedActions[actionId] = {
                   type: "attack",
@@ -1542,7 +1821,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       }
 
       // Detect "make an attack" / "make a standard attack" / "make an attack roll"
-      if (/make\s+(an?\s+)?(standard\s+)?attack(\s+roll)?/i.test(description)) {
+      if (/make\s+(an?\s+)?(standard\s+)?attack(\s+roll)?|соверш(?:ите|ить|ает|ают)\s+(?:стандартную\s+)?атак(?:у|и)/i.test(searchText)) {
           const actionId = foundry.utils.randomID(16);
           detectedActions[actionId] = {
               type: "attack",
@@ -1583,14 +1862,14 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
                   difficulty: null,
                   damageMod: "none"
               },
-              name: "Attack",
+              name: StatblockImporter._detectedActionName("attack"),
               range: ""
           };
       }
 
       // Detect damage dice patterns only when in damage context
       // Check if text mentions "damage" at all (with or without type specifier)
-      const hasDamageContext = /\bdamage\b/i.test(description);
+      const hasDamageContext = /\bdamage\b|урон/i.test(searchText);
 
       if (hasDamageContext) {
           // Detect damage type and direct flag
@@ -1598,26 +1877,26 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
           let damageType = ["physical"];
           let isDirect = false;
 
-          if (/direct\s+(?:magic|magical)\s+damage/i.test(description)) {
+          if (/direct\s+(?:magic|magical)\s+damage|прям(?:ой|ого|ому|ым)?\s+маг(?:ический|ического|ическому|ическим)?\s+урон/i.test(searchText)) {
               damageType = ["magical"];
               isDirect = true;
-          } else if (/direct\s+physical\s+damage/i.test(description)) {
+          } else if (/direct\s+physical\s+damage|прям(?:ой|ого|ому|ым)?\s+физ(?:ический|ического|ическому|ическим)?\s+урон/i.test(searchText)) {
               damageType = ["physical"];
               isDirect = true;
-          } else if (/direct\s+damage/i.test(description)) {
+          } else if (/direct\s+damage|прям(?:ой|ого|ому|ым)?\s+урон/i.test(searchText)) {
               // "direct damage" without type = physical + direct
               damageType = ["physical"];
               isDirect = true;
-          } else if (/(?:magic|magical)\s+damage/i.test(description)) {
+          } else if (/(?:magic|magical)\s+damage|маг(?:ический|ического|ическому|ическим)?\s+урон/i.test(searchText)) {
               damageType = ["magical"];
-          } else if (/physical\s+damage/i.test(description)) {
+          } else if (/physical\s+damage|физ(?:ический|ического|ическому|ическим)?\s+урон/i.test(searchText)) {
               damageType = ["physical"];
           }
           // If just "damage" without type, defaults remain: physical, direct: false
 
           // Pattern: XdY or XdY+Z with optional spaces, with or without [[/r ]] wrapper
           const diceRegex = /(?:\[\[\/r\s+)?(\d+d\d+)(?:\s*([+-])\s*(\d+))?(?:\]\])?/g;
-          const diceMatches = description.matchAll(diceRegex);
+          const diceMatches = searchText.matchAll(diceRegex);
 
           for (const match of diceMatches) {
               const diceBase = match[1]; // e.g., "1d10"
@@ -1664,7 +1943,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
                   },
                   target: { type: "any", amount: null },
                   effects: [],
-                  name: `Damage (${formula})`,
+                  name: StatblockImporter._detectedActionName("damage", null, formula),
                   range: ""
               };
           }
@@ -1981,7 +2260,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
 
       // For weapons, remove "Attack" and "Damage" actions (they are redundant with the weapon's base attack)
       for (const [id, action] of Object.entries(detectedActions)) {
-          if (action.name === "Attack" || action.name?.startsWith("Damage")) {
+          if (action.type === "attack" || action.type === "damage") {
               delete detectedActions[id];
           }
       }
@@ -2112,6 +2391,8 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
    */
   static async parseStatblockData(text, forceActorType = null) {
       StatblockImporter.registerSettings();
+
+      text = StatblockImporter._normalizeActorStatblockText(text);
 
       const rawLines = text.split(/\r?\n/)
                         .map(l => l.trim())
@@ -2469,25 +2750,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
               }
           }
           
-          let finalDesc = currentFeature.system.description;
-          if (finalDesc.includes("•") || finalDesc.includes("- ")) {
-              const lines = finalDesc.split("</p>").map(l => l.replace("<p>", "").trim()).filter(l => l);
-              let listBuffer = [];
-              let htmlParts = [];
-              for (let l of lines) {
-                  if (l.startsWith("•") || l.startsWith("- ")) {
-                      listBuffer.push(`<li>${l.substring(1).trim()}</li>`);
-                  } else {
-                      if (listBuffer.length > 0) {
-                          htmlParts.push(`<ul>${listBuffer.join("")}</ul>`);
-                          listBuffer = [];
-                      }
-                      htmlParts.push(`<p>${l}</p>`);
-                  }
-              }
-              if (listBuffer.length > 0) htmlParts.push(`<ul>${listBuffer.join("")}</ul>`);
-              finalDesc = htmlParts.join("");
-          }
+          let finalDesc = StatblockImporter._formatFeatureDescriptionHtml(currentFeature.system.description);
 
           // Wrap dice rolls in [[/r ]] format
           finalDesc = StatblockImporter.wrapDiceRolls(finalDesc);
@@ -2528,7 +2791,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
                       : (game.settings.get("dh-statblock-importer", "featureIconAdversary") || "icons/magic/symbols/star-solid-gold.webp"),
                   system: {
                       featureForm: featureMatch[2].toLowerCase(),
-                      description: featureDesc ? `<p>${featureDesc}</p>` : ""
+                      description: featureDesc
                   },
                   flags: { dhImporter: { isCompendium: false } }
               };
@@ -2536,18 +2799,16 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
               if (currentFeature) {
                   let cleanedLine = replaceNameInText(line);
                   let desc = currentFeature.system.description;
+                  const isBulletLine = /^(?:[-*]|\u2022)\s+/.test(cleanedLine.trim());
 
                   if (desc === "") {
-                      // First line of description (when format is "Name - Type" without colon)
-                      desc = `<p>${cleanedLine}</p>`;
+                      desc = cleanedLine;
+                  } else if (isBulletLine) {
+                      desc += `\n${cleanedLine}`;
                   } else {
-                      desc = desc.replace("</p>", "");
-                      if (line.trim().startsWith("•") || line.trim().startsWith("- ")) {
-                          desc += `</p><p>${cleanedLine}</p>`;
-                      } else {
-                          desc += " " + cleanedLine + "</p>";
-                      }
+                      desc += ` ${cleanedLine}`;
                   }
+
                   currentFeature.system.description = desc;
               }
           }
