@@ -1,12 +1,19 @@
+import { localize, moduleKey } from "./i18n.js";
+
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 export class StatblockConfig extends HandlebarsApplicationMixin(ApplicationV2) {
+
+    constructor(options = {}) {
+        super(options);
+        this.options.window.title = localize("Config.Title");
+    }
 
     static DEFAULT_OPTIONS = {
         id: "dh-statblock-config",
         tag: "form",
         window: {
-            title: "Importer Configuration",
+            title: moduleKey("Config.Title"),
             icon: "fas fa-cog",
             resizable: false,
             width: 520,

@@ -1,3 +1,5 @@
+import { localize, moduleKey } from "./i18n.js";
+
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 /**
@@ -8,7 +10,7 @@ export class FeatureCodeDialog extends HandlebarsApplicationMixin(ApplicationV2)
         id: "dh-feature-code-dialog",
         tag: "div",
         window: {
-            title: "Feature Code Generator",
+            title: moduleKey("CodeDialog.Title"),
             icon: "fas fa-code",
             minimizable: false,
             resizable: true
@@ -30,6 +32,7 @@ export class FeatureCodeDialog extends HandlebarsApplicationMixin(ApplicationV2)
 
     constructor(options = {}) {
         super(options);
+        this.options.window.title = localize("CodeDialog.Title");
         this.features = options.features || [];
     }
 
@@ -126,7 +129,7 @@ Hooks.on('init', () => {
             // Visual feedback
             const button = target;
             const originalHTML = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            button.innerHTML = `<i class="fas fa-check"></i> ${localize("CodeDialog.copied")}`;
             button.classList.add('success');
 
             setTimeout(() => {
@@ -134,9 +137,9 @@ Hooks.on('init', () => {
                 button.classList.remove('success');
             }, 2000);
 
-            ui.notifications.info("Code copied to clipboard!");
+            ui.notifications.info(localize("CodeDialog.copySuccess"));
         } catch (err) {
-            ui.notifications.error("Failed to copy to clipboard");
+            ui.notifications.error(localize("CodeDialog.copyFailed"));
             console.error("Daggerheart: Statblock Importer | Copy failed:", err);
         }
     }

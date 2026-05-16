@@ -2,6 +2,19 @@ import { StatblockConfig } from "./config.js";
 import { TEMPLATES } from "./templates.js";
 import { FeatureCodeDialog } from "./code-dialog.js";
 import { TextNormalizer } from "./utils/text-normalizer.js";
+import {
+  actorTypeLabel,
+  adversaryTypeLabel,
+  environmentTypeLabel,
+  featureFormLabel,
+  format,
+  itemTypeLabel,
+  localize,
+  localizeKey,
+  moduleKey,
+  rangeLabel,
+  titleCase
+} from "./i18n.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -9,6 +22,11 @@ const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
  * Main Importer Application using V13 ApplicationV2 standards.
  */
 export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2) {
+
+  constructor(options = {}) {
+    super(options);
+    this.options.window.title = localize("Importer.Title");
+  }
 
   /** Valid adversary types (lowercase) */
   static VALID_ADVERSARY_TYPES = ["bruiser", "horde", "leader", "minion", "ranged", "skulk", "social", "solo", "standard", "support"];
@@ -45,7 +63,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
     id: "dh-statblock-importer",
     tag: "form",
     window: {
-      title: "Daggerheart: Statblock Importer",
+      title: moduleKey("Importer.Title"),
       icon: "fas fa-skull",
       resizable: true,
       contentClasses: ["standard-form"]
@@ -81,7 +99,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       // Feature Packs
       if (!game.settings.settings.has("dh-statblock-importer.selectedCompendiums")) {
           game.settings.register("dh-statblock-importer", "selectedCompendiums", {
-              name: "Selected Feature Compendiums",
+              name: moduleKey("Settings.selectedCompendiums"),
               scope: "client",
               config: false,
               type: Array,
@@ -92,7 +110,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       // Actor Packs
       if (!game.settings.settings.has("dh-statblock-importer.selectedActorCompendiums")) {
           game.settings.register("dh-statblock-importer", "selectedActorCompendiums", {
-              name: "Selected Actor Compendiums",
+              name: moduleKey("Settings.selectedActorCompendiums"),
               scope: "client",
               config: false,
               type: Array,
@@ -103,7 +121,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       // Initialization Flag
       if (!game.settings.settings.has("dh-statblock-importer.configInitialized")) {
           game.settings.register("dh-statblock-importer", "configInitialized", {
-              name: "Config Initialized",
+              name: moduleKey("Settings.configInitialized"),
               scope: "client",
               config: false,
               type: Boolean,
@@ -114,89 +132,89 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       // Folder Names (Actors)
       if (!game.settings.settings.has("dh-statblock-importer.adversaryFolderName")) {
           game.settings.register("dh-statblock-importer", "adversaryFolderName", {
-              name: "Adversary Folder Name",
+              name: moduleKey("Settings.adversaryFolderName"),
               scope: "world",
               config: false,
               type: String,
-              default: "💀 Imported Adversaries"
+              default: localize("Folders.importedAdversaries")
           });
       }
 
       if (!game.settings.settings.has("dh-statblock-importer.environmentFolderName")) {
           game.settings.register("dh-statblock-importer", "environmentFolderName", {
-              name: "Environment Folder Name",
+              name: moduleKey("Settings.environmentFolderName"),
               scope: "world",
               config: false,
               type: String,
-              default: "🏰 Imported Environments"
+              default: localize("Folders.importedEnvironments")
           });
       }
 
       // Folder Names (Items)
       if (!game.settings.settings.has("dh-statblock-importer.lootFolderName")) {
           game.settings.register("dh-statblock-importer", "lootFolderName", {
-              name: "Loot Folder Name",
+              name: moduleKey("Settings.lootFolderName"),
               scope: "world",
               config: false,
               type: String,
-              default: "👑 Imported Loot"
+              default: localize("Folders.importedLoot")
           });
       }
 
       if (!game.settings.settings.has("dh-statblock-importer.consumableFolderName")) {
           game.settings.register("dh-statblock-importer", "consumableFolderName", {
-              name: "Consumable Folder Name",
+              name: moduleKey("Settings.consumableFolderName"),
               scope: "world",
               config: false,
               type: String,
-              default: "🧪 Imported Consumables"
+              default: localize("Folders.importedConsumables")
           });
       }
 
       if (!game.settings.settings.has("dh-statblock-importer.weaponFolderName")) {
           game.settings.register("dh-statblock-importer", "weaponFolderName", {
-              name: "Weapon Folder Name",
+              name: moduleKey("Settings.weaponFolderName"),
               scope: "world",
               config: false,
               type: String,
-              default: "⚔️ Imported Weapons"
+              default: localize("Folders.importedWeapons")
           });
       }
 
       if (!game.settings.settings.has("dh-statblock-importer.armorFolderName")) {
           game.settings.register("dh-statblock-importer", "armorFolderName", {
-              name: "Armor Folder Name",
+              name: moduleKey("Settings.armorFolderName"),
               scope: "world",
               config: false,
               type: String,
-              default: "🛡️ Imported Armors"
+              default: localize("Folders.importedArmors")
           });
       }
 
       if (!game.settings.settings.has("dh-statblock-importer.featureFolderName")) {
           game.settings.register("dh-statblock-importer", "featureFolderName", {
-              name: "Feature Folder Name",
+              name: moduleKey("Settings.featureFolderName"),
               scope: "world",
               config: false,
               type: String,
-              default: "✨ Imported Features"
+              default: localize("Folders.importedFeatures")
           });
       }
 
       if (!game.settings.settings.has("dh-statblock-importer.domainCardFolderName")) {
           game.settings.register("dh-statblock-importer", "domainCardFolderName", {
-              name: "Domain Card Folder Name",
+              name: moduleKey("Settings.domainCardFolderName"),
               scope: "world",
               config: false,
               type: String,
-              default: "📜 Imported Domain Cards"
+              default: localize("Folders.importedDomainCards")
           });
       }
 
       // Separator Mode (blankLine or separator)
       if (!game.settings.settings.has("dh-statblock-importer.separatorMode")) {
           game.settings.register("dh-statblock-importer", "separatorMode", {
-              name: "Separator Mode",
+              name: moduleKey("Settings.separatorMode"),
               scope: "world",
               config: false,
               type: String,
@@ -207,8 +225,8 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       // Debug Mode — config: true so Foundry renders it natively in Module Settings
       if (!game.settings.settings.has("dh-statblock-importer.debugMode")) {
           game.settings.register("dh-statblock-importer", "debugMode", {
-              name: "Debug Mode",
-              hint: "When enabled, logs import details to the browser console (F12).",
+              name: moduleKey("Settings.debugMode.name"),
+              hint: moduleKey("Settings.debugMode.hint"),
               scope: "client",
               config: true,
               type: Boolean,
@@ -219,7 +237,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       // +Features Toggle State
       if (!game.settings.settings.has("dh-statblock-importer.plusFeaturesEnabled")) {
           game.settings.register("dh-statblock-importer", "plusFeaturesEnabled", {
-              name: "+Features Enabled",
+              name: moduleKey("Settings.plusFeaturesEnabled"),
               scope: "client",
               config: false,
               type: Boolean,
@@ -230,7 +248,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       // +Code Generator Toggle State
       if (!game.settings.settings.has("dh-statblock-importer.codeGeneratorEnabled")) {
           game.settings.register("dh-statblock-importer", "codeGeneratorEnabled", {
-              name: "+Code Generator Enabled",
+              name: moduleKey("Settings.codeGeneratorEnabled"),
               scope: "client",
               config: false,
               type: Boolean,
@@ -241,7 +259,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       // Feature Icon: Adversary
       if (!game.settings.settings.has("dh-statblock-importer.featureIconAdversary")) {
           game.settings.register("dh-statblock-importer", "featureIconAdversary", {
-              name: "Feature Icon (Adversary)",
+              name: moduleKey("Settings.featureIconAdversary"),
               scope: "world",
               config: false,
               type: String,
@@ -252,7 +270,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       // Feature Icon: Environment
       if (!game.settings.settings.has("dh-statblock-importer.featureIconEnvironment")) {
           game.settings.register("dh-statblock-importer", "featureIconEnvironment", {
-              name: "Feature Icon (Environment)",
+              name: moduleKey("Settings.featureIconEnvironment"),
               scope: "world",
               config: false,
               type: String,
@@ -263,7 +281,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       // Feature Icon: Feature (standalone Item mode)
       if (!game.settings.settings.has("dh-statblock-importer.featureIconFeature")) {
           game.settings.register("dh-statblock-importer", "featureIconFeature", {
-              name: "Feature Icon (Feature Item)",
+              name: moduleKey("Settings.featureIconFeature"),
               scope: "world",
               config: false,
               type: String,
@@ -274,7 +292,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       // Use actor portrait for adversary features
       if (!game.settings.settings.has("dh-statblock-importer.featureIconMatchAdversary")) {
           game.settings.register("dh-statblock-importer", "featureIconMatchAdversary", {
-              name: "Feature Icon matches Adversary portrait",
+              name: moduleKey("Settings.featureIconMatchAdversary"),
               scope: "world",
               config: false,
               type: Boolean,
@@ -285,7 +303,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       // Use actor portrait for environment features
       if (!game.settings.settings.has("dh-statblock-importer.featureIconMatchEnvironment")) {
           game.settings.register("dh-statblock-importer", "featureIconMatchEnvironment", {
-              name: "Feature Icon matches Environment portrait",
+              name: moduleKey("Settings.featureIconMatchEnvironment"),
               scope: "world",
               config: false,
               type: Boolean,
@@ -405,7 +423,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
                       journal.sheet.render(true, { pageId: page.id });
                   }
               } else {
-                  ui.notifications.warn(`Instructions page for "${mode}" not found in Compendium.`);
+                  ui.notifications.warn(format("Importer.instructionsMissing", { mode }));
                   console.warn(`DH Importer | Could not find JournalEntryPage with UUID: ${pageUuid}`);
               }
           } else {
@@ -416,8 +434,8 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
               }
           }
       } catch (err) {
-          StatblockImporter.errorLog("Error opening instructions", err);
-          ui.notifications.error("Failed to open instructions.");
+          StatblockImporter.errorLog(localize("Importer.errorOpeningInstructions"), err);
+          ui.notifications.error(localize("Importer.instructionsOpenFailed"));
       }
   }
 
@@ -443,12 +461,12 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
                   journal.sheet.render(true, { pageId: doc.id });
               }
           } else {
-              ui.notifications.warn("+Features help page not found in Compendium.");
+              ui.notifications.warn(localize("Importer.plusFeaturesMissing"));
               console.warn("DH Importer | Could not find JournalEntryPage with UUID: Compendium.dh-statblock-importer.journal.JournalEntry.skE6HClujYrdKfKp.JournalEntryPage.wvgvxX1ksmUL2Ahj");
           }
       } catch (err) {
-          StatblockImporter.errorLog("Error opening +Features help", err);
-          ui.notifications.error("Failed to open +Features help.");
+          StatblockImporter.errorLog(localize("Importer.errorOpeningPlusFeatures"), err);
+          ui.notifications.error(localize("Importer.plusFeaturesOpenFailed"));
       }
   }
 
@@ -473,12 +491,12 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
                   journal.sheet.render(true, { pageId: doc.id });
               }
           } else {
-              ui.notifications.warn("+Code help page not found in Compendium.");
+              ui.notifications.warn(localize("Importer.codeHelpMissing"));
               console.warn("DH Importer | Could not find JournalEntryPage with UUID: Compendium.dh-statblock-importer.journal.JournalEntry.skE6HClujYrdKfKp.JournalEntryPage.LiVwLebJ7Ih66gBw");
           }
       } catch (err) {
-          StatblockImporter.errorLog("Error opening +Code help", err);
-          ui.notifications.error("Failed to open +Code help.");
+          StatblockImporter.errorLog(localize("Importer.errorOpeningCodeHelp"), err);
+          ui.notifications.error(localize("Importer.codeHelpOpenFailed"));
       }
   }
 
@@ -537,7 +555,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
     const previewBox = formElement.querySelector("#dh-importer-preview");
 
     if (!textarea || !textarea.value.trim()) {
-      previewBox.innerHTML = `<p style="color:red">Please paste text to validate.</p>`;
+      previewBox.innerHTML = `<p style="color:red">${localize("Importer.emptyValidate")}</p>`;
       return;
     }
 
@@ -558,7 +576,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
     let fullHtml = "";
 
     if (isMultiple) {
-      fullHtml += `<div class="dh-preview-item success" style="background:rgba(72,187,72,0.2);padding:8px;margin-bottom:10px;border-radius:4px;"><strong>Batch Mode:</strong> ${blocks.length} items detected</div>`;
+      fullHtml += `<div class="dh-preview-item success" style="background:rgba(72,187,72,0.2);padding:8px;margin-bottom:10px;border-radius:4px;"><strong>${localize("Importer.batchMode")}:</strong> ${format("Importer.itemsDetected", { count: blocks.length })}</div>`;
     }
 
     for (let blockIndex = 0; blockIndex < blocks.length; blockIndex++) {
@@ -580,8 +598,8 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
             result = await StatblockImporter.parseStatblockData(block, mode);
         }
       } catch (error) {
-        const firstLine = block.split(/\r?\n/)[0] || "Unknown";
-        fullHtml += `<div class="dh-preview-item warning"><strong>#${blockIndex + 1} Error:</strong> ${error.message} (${firstLine})</div>`;
+        const firstLine = block.split(/\r?\n/)[0] || localize("Common.unknown");
+        fullHtml += `<div class="dh-preview-item warning"><strong>${format("Importer.blockError", { index: blockIndex + 1 })}:</strong> ${error.message} (${firstLine})</div>`;
         continue;
       }
 
@@ -593,105 +611,136 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       
       fullHtml += `
           <div class="dh-preview-header">
-              <img src="${defaultImg}" class="dh-preview-img" data-idx="${blockIndex}" title="Click to change image">
+              <img src="${defaultImg}" class="dh-preview-img" data-idx="${blockIndex}" title="${localize("Importer.imageChange")}">
               <div class="dh-preview-name">${labelPrefix}${result.name}</div>
           </div>
       `;
 
       fullHtml += `<div class="dh-preview-body">`;
+
+      const labels = {
+        type: localizeKey("DAGGERHEART.GENERAL.type", localize("Fields.type")),
+        tier: localizeKey("DAGGERHEART.ACTORS.Adversary.FIELDS.tier.label", localize("Fields.tier")),
+        trait: localize("Fields.trait"),
+        range: localizeKey("DAGGERHEART.ACTORS.Adversary.FIELDS.attack.range.label", localize("Fields.range")),
+        damage: localizeKey("DAGGERHEART.ACTORS.Adversary.FIELDS.attack.damage.value.label", localize("Fields.damage")),
+        damageType: localizeKey("DAGGERHEART.ACTORS.Adversary.FIELDS.attack.damage.type.label", localize("Fields.damageType")),
+        burden: localize("Fields.burden"),
+        fullDescription: localize("Importer.fullDescription"),
+        description: localizeKey("DAGGERHEART.GENERAL.description", localize("Fields.description")),
+        actionType: localize("Importer.actionType"),
+        cardType: localize("Importer.cardType"),
+        actorType: localize("Importer.actorType"),
+        hordeHP: localize("Importer.hordeHP"),
+        hp: localize("Fields.hp"),
+        stress: localizeKey("DAGGERHEART.GENERAL.stress", localize("Fields.stress")),
+        thresholds: localize("Fields.thresholds"),
+        attack: localizeKey("DAGGERHEART.ACTIONS.TYPES.attack.name", localize("Fields.attack")),
+        atkBonus: localize("Importer.atkBonus"),
+        hordeDamage: localizeKey("DAGGERHEART.ACTORS.Adversary.hordeDamage", localize("Importer.hordeDamage")),
+        experience: localizeKey("DAGGERHEART.APPLICATIONS.CharacterCreation.tabs.experience", localize("Fields.experience")),
+        motives: localize("Importer.motives"),
+        impulses: localizeKey("DAGGERHEART.ACTORS.Environment.FIELDS.impulses.label", localize("Fields.impulses")),
+        potentialAdversaries: localize("Importer.potentialAdversaries"),
+        features: localizeKey("DAGGERHEART.GENERAL.features", localize("Fields.features")),
+        domain: localizeKey("DAGGERHEART.GENERAL.Domain.single", localize("Fields.domain")),
+        level: localizeKey("DAGGERHEART.GENERAL.level", localize("Fields.level")),
+        recallCost: localizeKey("DAGGERHEART.ITEMS.DomainCard.recallCost", localize("Fields.recallCost")),
+        baseScore: localizeKey("DAGGERHEART.ITEMS.Armor.baseScore", localize("Fields.baseScore"))
+      };
       
       const show = (label, value) => {
         if (value !== undefined && value !== null && value !== "") {
           return `<div class="dh-preview-item success"><strong>${label}:</strong> ${value}</div>`;
         }
-        return `<div class="dh-preview-item warning"><strong>${label}:</strong> Not Found</div>`;
+        return `<div class="dh-preview-item warning"><strong>${label}:</strong> ${localize("Common.notFound")}</div>`;
       };
 
       if (mode === "weapon") {
           // WEAPON PREVIEW
-          fullHtml += show("Type", "Weapon");
-          fullHtml += show("Tier", result.system.tier);
-          fullHtml += show("Trait", result.system.attack.roll.trait);
-          fullHtml += show("Range", result.system.attack.range);
+          fullHtml += show(labels.type, itemTypeLabel("weapon"));
+          fullHtml += show(labels.tier, result.system.tier);
+          fullHtml += show(labels.trait, result.system.attack.roll.trait);
+          fullHtml += show(labels.range, rangeLabel(result.system.attack.range));
 
           if (result.system.attack.damage.parts.length > 0) {
               const part = result.system.attack.damage.parts[0];
               const dmgStr = `${part.value.flatMultiplier > 1 ? part.value.flatMultiplier : ""}${part.value.dice}${part.value.bonus ? (part.value.bonus > 0 ? "+"+part.value.bonus : part.value.bonus) : ""} ${part.type.join("/")}`;
-              fullHtml += show("Damage", dmgStr);
+              fullHtml += show(labels.damage, dmgStr);
           }
 
-          fullHtml += show("Burden", result.system.burden);
+          fullHtml += show(labels.burden, result.system.burden);
 
           // Show combined description (Feature + Desc)
           const descPreview = result.system.description.length > 100 ? result.system.description.substring(0, 100) + "..." : result.system.description;
-          fullHtml += `<div class="dh-preview-item success"><strong>Full Description:</strong><br><em style="font-size:0.9em">${descPreview}</em></div>`;
+          fullHtml += `<div class="dh-preview-item success"><strong>${labels.fullDescription}:</strong><br><em style="font-size:0.9em">${descPreview}</em></div>`;
 
       } else if (mode === "armor") {
           // ARMOR PREVIEW
-          fullHtml += show("Type", "Armor");
-          fullHtml += show("Tier", result.system.tier);
-          fullHtml += show("Base Score", result.system.baseScore);
-          fullHtml += show("Thresholds", `${result.system.baseThresholds?.major || "?"}/${result.system.baseThresholds?.severe || "?"}`);
+          fullHtml += show(labels.type, itemTypeLabel("armor"));
+          fullHtml += show(labels.tier, result.system.tier);
+          fullHtml += show(labels.baseScore, result.system.baseScore);
+          fullHtml += show(labels.thresholds, `${result.system.baseThresholds?.major || "?"}/${result.system.baseThresholds?.severe || "?"}`);
 
           if (result.system.description) {
               const descPreview = result.system.description.length > 100 ? result.system.description.substring(0, 100) + "..." : result.system.description;
-              fullHtml += `<div class="dh-preview-item success"><strong>Description:</strong><br><em style="font-size:0.9em">${descPreview}</em></div>`;
+              fullHtml += `<div class="dh-preview-item success"><strong>${labels.description}:</strong><br><em style="font-size:0.9em">${descPreview}</em></div>`;
           }
 
       } else if (mode === "feature") {
           // FEATURE PREVIEW
-          fullHtml += show("Type", "Feature");
-          const formLabel = result.system.featureForm ? (result.system.featureForm.charAt(0).toUpperCase() + result.system.featureForm.slice(1)) : "Passive";
-          fullHtml += show("Action Type", formLabel);
+          fullHtml += show(labels.type, itemTypeLabel("feature"));
+          const formLabel = result.system.featureForm ? featureFormLabel(result.system.featureForm) : featureFormLabel("passive");
+          fullHtml += show(labels.actionType, formLabel);
 
           if (result.system.description) {
               const descPreview = result.system.description.length > 100 ? result.system.description.substring(0, 100) + "..." : result.system.description;
-              fullHtml += `<div class="dh-preview-item success"><strong>Description:</strong><br><em style="font-size:0.9em">${descPreview}</em></div>`;
+              fullHtml += `<div class="dh-preview-item success"><strong>${labels.description}:</strong><br><em style="font-size:0.9em">${descPreview}</em></div>`;
           }
 
       } else if (mode === "domainCard") {
           // DOMAIN CARD PREVIEW
-          fullHtml += show("Type", "Domain Card");
-          fullHtml += show("Domain", result.system.domain);
-          fullHtml += show("Card Type", result.system.type);
-          fullHtml += show("Level", result.system.level);
-          fullHtml += show("Recall Cost", result.system.recallCost);
+          fullHtml += show(labels.type, itemTypeLabel("domainCard"));
+          fullHtml += show(labels.domain, result.system.domain);
+          fullHtml += show(labels.cardType, result.system.type);
+          fullHtml += show(labels.level, result.system.level);
+          fullHtml += show(labels.recallCost, result.system.recallCost);
 
           if (result.system.description) {
               const descPreview = result.system.description.length > 100 ? result.system.description.substring(0, 100) + "..." : result.system.description;
-              fullHtml += `<div class="dh-preview-item success"><strong>Description:</strong><br><em style="font-size:0.9em">${descPreview}</em></div>`;
+              fullHtml += `<div class="dh-preview-item success"><strong>${labels.description}:</strong><br><em style="font-size:0.9em">${descPreview}</em></div>`;
           }
-      
+       
       } else if (isItemMode) {
           // SIMPLE ITEM PREVIEW
-          fullHtml += show("Type", result.type);
-          fullHtml += `<div class="dh-preview-item success"><strong>Description:</strong><br><em style="font-size:0.9em">${result.system.description}</em></div>`;
+          fullHtml += show(labels.type, itemTypeLabel(result.type));
+          fullHtml += `<div class="dh-preview-item success"><strong>${labels.description}:</strong><br><em style="font-size:0.9em">${result.system.description}</em></div>`;
       } else {
           // ACTOR PREVIEW
           const data = result.systemData;
           const isEnvironment = result.actorType === "environment";
 
-          fullHtml += show("Actor Type", isEnvironment ? "Environment" : "Adversary");
-          fullHtml += show("Tier", data.tier);
-          fullHtml += show("Type", data.type);
-          if (data.type === "horde") fullHtml += show("Horde HP", data.hordeHp);
-          fullHtml += show("Difficulty", data.difficulty);
+          fullHtml += show(labels.actorType, isEnvironment ? actorTypeLabel("environment") : actorTypeLabel("adversary"));
+          fullHtml += show(labels.tier, data.tier);
+          fullHtml += show(labels.type, isEnvironment ? environmentTypeLabel(data.type) : adversaryTypeLabel(data.type));
+          if (data.type === "horde") fullHtml += show(labels.hordeHP, data.hordeHp);
+          fullHtml += show(localizeKey("DAGGERHEART.ACTORS.Adversary.FIELDS.difficulty.label", localize("Fields.difficulty")), data.difficulty);
 
           if (!isEnvironment) {
              // ADVERSARY SPECIFIC FIELDS
-             fullHtml += show("HP", data.resources?.hitPoints?.max);
-             fullHtml += show("Stress", data.resources?.stress?.max);
+             fullHtml += show(labels.hp, data.resources?.hitPoints?.max);
+             fullHtml += show(labels.stress, data.resources?.stress?.max);
 
              // Damage Thresholds
              const threshStr = (data.damageThresholds?.major || data.damageThresholds?.severe)
                  ? `${data.damageThresholds.major || "?"}/${data.damageThresholds.severe || "?"}`
                  : null;
-             fullHtml += show("Thresholds", threshStr);
+             fullHtml += show(labels.thresholds, threshStr);
 
              // Attack details - separate fields
-             fullHtml += show("Attack", data.attack?.name);
-             fullHtml += show("Range", data.attack?.range);
-             fullHtml += show("ATK Bonus", data.attack?.roll?.bonus);
+             fullHtml += show(labels.attack, data.attack?.name);
+             fullHtml += show(labels.range, data.attack?.range ? rangeLabel(data.attack.range) : null);
+             fullHtml += show(labels.atkBonus, data.attack?.roll?.bonus);
 
              // Damage - dice and type separate
              let dmgDice = null;
@@ -717,28 +766,28 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
                      }
                  }
              }
-             fullHtml += show("Damage", dmgDice);
-             fullHtml += show("Damage Type", dmgType);
-             if (data.type === "horde") fullHtml += show("Horde Damage", hordeDmg);
+             fullHtml += show(labels.damage, dmgDice);
+             fullHtml += show(labels.damageType, dmgType);
+             if (data.type === "horde") fullHtml += show(labels.hordeDamage, hordeDmg);
 
              // Experiences
              const expEntries = Object.values(data.experiences || {});
              const expStr = expEntries.length > 0
                  ? expEntries.map(e => `${e.name} ${e.value >= 0 ? "+"+e.value : e.value}`).join(", ")
                  : null;
-             fullHtml += show("Experience", expStr);
+             fullHtml += show(labels.experience, expStr);
 
              // Motives & Tactics
              const motivesPreview = data.motivesAndTactics
                  ? (data.motivesAndTactics.length > 80 ? data.motivesAndTactics.substring(0, 80) + "..." : data.motivesAndTactics)
                  : null;
-             fullHtml += show("Motives", motivesPreview);
-          } else {
+             fullHtml += show(labels.motives, motivesPreview);
+           } else {
              // ENVIRONMENT SPECIFIC FIELDS
              const impulsesPreview = data.impulses
                  ? (data.impulses.length > 80 ? data.impulses.substring(0, 80) + "..." : data.impulses)
                  : null;
-             fullHtml += show("Impulses", impulsesPreview);
+             fullHtml += show(labels.impulses, impulsesPreview);
 
              // Potential Adversaries - show each actor with (Compendium) or (New), same style as features
              const potAdvPreview = data._potentialAdvPreview || [];
@@ -749,37 +798,37 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
                      if (!byLabel[item.label]) byLabel[item.label] = [];
                      byLabel[item.label].push(item);
                  }
-                 fullHtml += `<div class="dh-preview-item success"><strong>Potential Adversaries (${potAdvPreview.length}):</strong></div>`;
-                 for (const [label, actors] of Object.entries(byLabel)) {
-                     fullHtml += `<div class="dh-preview-subitem" style="font-weight:bold; margin-top:4px;">— ${label}:</div>`;
-                     for (const actor of actors) {
-                         const sourceTag = actor.found
-                             ? '<span style="color:#48bb48">(Compendium)</span>'
-                             : '<span style="color:#ffaa00">(New)</span>';
-                         fullHtml += `<div class="dh-preview-subitem">• ${actor.name} ${sourceTag}</div>`;
-                     }
-                 }
-             } else if (data.notes) {
-                 fullHtml += show("Potential Adversaries", data.notes);
-             }
-          }
+                  fullHtml += `<div class="dh-preview-item success"><strong>${format("Importer.potentialAdversariesCount", { count: potAdvPreview.length })}:</strong></div>`;
+                  for (const [label, actors] of Object.entries(byLabel)) {
+                      fullHtml += `<div class="dh-preview-subitem" style="font-weight:bold; margin-top:4px;">— ${label}:</div>`;
+                      for (const actor of actors) {
+                          const sourceTag = actor.found
+                              ? `<span style="color:#48bb48">(${localize("Common.compendium")})</span>`
+                              : `<span style="color:#ffaa00">(${localize("Common.new")})</span>`;
+                          fullHtml += `<div class="dh-preview-subitem">• ${actor.name} ${sourceTag}</div>`;
+                      }
+                  }
+              } else if (data.notes) {
+                  fullHtml += show(labels.potentialAdversaries, data.notes);
+              }
+           }
 
           // Description (both types)
           const descPreview = data.description
               ? (data.description.length > 100 ? data.description.substring(0, 100) + "..." : data.description)
               : null;
-          fullHtml += show("Description", descPreview);
+          fullHtml += show(labels.description, descPreview);
 
           // Features - one per line with source indicator
           if (result.items?.length > 0) {
-              fullHtml += `<div class="dh-preview-item success"><strong>Features (${result.items.length}):</strong></div>`;
+              fullHtml += `<div class="dh-preview-item success"><strong>${format("Importer.featuresCount", { count: result.items.length })}:</strong></div>`;
               for (const item of result.items) {
                   const isCompendium = item.flags?.dhImporter?.isCompendium === true;
-                  const sourceTag = isCompendium ? '<span style="color:#48bb48">(Compendium)</span>' : '<span style="color:#ffaa00">(New)</span>';
+                  const sourceTag = isCompendium ? `<span style="color:#48bb48">(${localize("Common.compendium")})</span>` : `<span style="color:#ffaa00">(${localize("Common.new")})</span>`;
                   fullHtml += `<div class="dh-preview-subitem">• ${item.name} ${sourceTag}</div>`;
               }
           } else {
-              fullHtml += show("Features", null);
+              fullHtml += show(labels.features, null);
           }
       }
 
@@ -811,7 +860,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
     const previewBox = formElement.querySelector("#dh-importer-preview");
 
     if (!textarea || !textarea.value.trim()) {
-      ui.notifications.warn("Please paste some text first.");
+      ui.notifications.warn(localize("Importer.emptyImport"));
       return;
     }
 
@@ -838,7 +887,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
     try {
         if (isItemMode) {
             // 1. Find or Create ROOT Item Folder (Fixed Name/Color)
-            const rootName = "📦 Imported Items";
+            const rootName = localize("Folders.importedItems");
             const rootColor = "#052e00";
             
             let rootFolder = game.folders.find(f => f.name === rootName && f.type === "Item");
@@ -853,27 +902,27 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
 
             if (mode === "loot") {
                 settingKey = "lootFolderName";
-                defaultName = "👑 Imported Loot";
+                defaultName = localize("Folders.importedLoot");
                 color = "#5c4600";
             } else if (mode === "consumable") {
                 settingKey = "consumableFolderName";
-                defaultName = "🧪 Imported Consumables";
+                defaultName = localize("Folders.importedConsumables");
                 color = "#750027";
             } else if (mode === "weapon") {
                 settingKey = "weaponFolderName";
-                defaultName = "⚔️ Imported Weapons";
+                defaultName = localize("Folders.importedWeapons");
                 color = "#002b3d"; // Deep Blue/Teal
             } else if (mode === "armor") {
                 settingKey = "armorFolderName";
-                defaultName = "🛡️ Imported Armors";
+                defaultName = localize("Folders.importedArmors");
                 color = "#3d2b00"; // Bronze/Brown
             } else if (mode === "feature") {
                 settingKey = "featureFolderName";
-                defaultName = "✨ Imported Features";
+                defaultName = localize("Folders.importedFeatures");
                 color = "#4a3d00"; // Gold/Yellow
             } else if (mode === "domainCard") {
                 settingKey = "domainCardFolderName";
-                defaultName = "📜 Imported Domain Cards";
+                defaultName = localize("Folders.importedDomainCards");
                 color = "#1e0047"; // Indigo/Purple
             }
 
@@ -906,12 +955,12 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
             }
         }
     } catch (error) {
-        StatblockImporter.errorLog("Failed to create/find folders", error);
+        StatblockImporter.errorLog(localize("Importer.failedFolders"), error);
         return;
     }
 
     const progressNotification = (blocks.length > 1)
-        ? ui.notifications.info(`Importing... (0/${totalBlocks})`, { progress: true })
+        ? ui.notifications.info(format("Importer.importing", { current: 0, total: totalBlocks }), { progress: true })
         : null;
 
     // Accumulate features for batch creation (performance optimization)
@@ -924,7 +973,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
     for (let i = 0; i < blocks.length; i++) {
         const block = blocks[i];
         if (progressNotification) {
-            progressNotification.update({ pct: (i + 1) / totalBlocks, message: `Importing... (${i + 1}/${totalBlocks})` });
+            progressNotification.update({ pct: (i + 1) / totalBlocks, message: format("Importer.importing", { current: i + 1, total: totalBlocks }) });
         }
 
         try {
@@ -1058,16 +1107,16 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
             }
 
         } catch (error) {
-            const firstLine = block.split(/\r?\n/)[0] || "Unknown";
+            const firstLine = block.split(/\r?\n/)[0] || localize("Common.unknown");
             failedBlocks.push({ index: i + 1, name: firstLine, error: error.message });
-            StatblockImporter.errorLog(`Failed to import block ${i + 1}`, error);
+            StatblockImporter.errorLog(format("Importer.failedBlock", { index: i + 1 }), error);
         }
     }
 
     // Batch create all accumulated features
     if (pendingFeatures.length > 0) {
         if (progressNotification) {
-            progressNotification.update({ pct: 0.95, message: `Creating ${pendingFeatures.length} features...` });
+            progressNotification.update({ pct: 0.95, message: format("Importer.creatingFeatures", { count: pendingFeatures.length }) });
         }
 
         try {
@@ -1109,14 +1158,14 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
             StatblockImporter.debugLog(`+Features: Batch created ${createdFeatures.length} features`);
         } catch (batchError) {
             StatblockImporter.errorLog(`+Features: Batch creation failed`, batchError);
-            ui.notifications.error(`Failed to create features in batch. Check console.`);
+            ui.notifications.error(localize("Importer.failedFeatures"));
         }
     }
 
-    if (progressNotification) progressNotification.update({ pct: 1, message: "Import complete!" });
+    if (progressNotification) progressNotification.update({ pct: 1, message: localize("Importer.importComplete") });
 
     if (createdObjects.length > 0) {
-        if (blocks.length > 1) ui.notifications.info(`Imported ${createdObjects.length} objects.`);
+        if (blocks.length > 1) ui.notifications.info(format("Importer.importedObjects", { count: createdObjects.length }));
         if (createdObjects.length === 1 && !blocks.length > 1) createdObjects[0].sheet.render(true);
     }
 
@@ -1126,7 +1175,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
     }
 
     if (failedBlocks.length > 0) {
-        ui.notifications.warn(`Failed to import ${failedBlocks.length} items. Check console.`);
+        ui.notifications.warn(format("Importer.failedItems", { count: failedBlocks.length }));
     }
   }
 
@@ -1157,10 +1206,14 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
    * Helper to ensure the folder hierarchy (Type -> Tier) exists inside the root folder.
    */
   static async _ensureFolderHierarchy(rootFolder, type, tier, colorMap) {
-      if (!type) type = "Unknown";
+      const isEnvironment = colorMap === StatblockImporter.ENVIRONMENT_TYPE_COLORS;
+      const normalizedType = type ? String(type).toLowerCase() : "unknown";
       
-      const typeKey = type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
-      const color = colorMap[typeKey] || colorMap["Unknown"] || "#333333";
+      const colorKey = titleCase(normalizedType);
+      const typeKey = type
+          ? (isEnvironment ? environmentTypeLabel(normalizedType) : adversaryTypeLabel(normalizedType))
+          : localize("Common.unknown");
+      const color = colorMap[colorKey] || colorMap["Unknown"] || "#333333";
 
       let typeFolder = game.folders.find(f => f.name === typeKey && f.type === "Actor" && f.folder?.id === rootFolder.id);
       
@@ -1174,7 +1227,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
           });
       }
 
-      const tierName = `Tier ${tier}`;
+      const tierName = format("Folders.tier", { tier });
       let tierFolder = game.folders.find(f => f.name === tierName && f.type === "Actor" && f.folder?.id === typeFolder.id);
       
       if (!tierFolder) {
@@ -1200,7 +1253,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
    */
   static async _ensureFeatureFolderHierarchy(isEnvironment, actorType, featureType, colorMap) {
       // 1. Find or Create ROOT Item Folder
-      const rootName = "📦 Imported Items";
+      const rootName = localize("Folders.importedItems");
       const rootColor = "#052e00";
 
       let rootFolder = game.folders.find(f => f.name === rootName && f.type === "Item");
@@ -1209,7 +1262,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       }
 
       // 2. Find or Create Category Folder (Adversary Features or Environment Features)
-      const categoryName = isEnvironment ? "✨ Environment Features" : "✨ Adversary Features";
+      const categoryName = isEnvironment ? localize("Folders.environmentFeatures") : localize("Folders.adversaryFeatures");
       const categoryColor = isEnvironment ? "#0f3d0f" : "#4a3d00";
 
       let categoryFolder = game.folders.find(f => f.name === categoryName && f.type === "Item" && f.folder?.id === rootFolder.id);
@@ -1226,8 +1279,10 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       if (!actorType) return categoryFolder;
 
       // 4. Find or Create Actor Type Folder
-      const typeKey = actorType.charAt(0).toUpperCase() + actorType.slice(1).toLowerCase();
-      const typeColor = colorMap[typeKey] || colorMap["Unknown"] || "#333333";
+      const normalizedActorType = String(actorType).toLowerCase();
+      const colorKey = titleCase(normalizedActorType);
+      const typeKey = isEnvironment ? environmentTypeLabel(normalizedActorType) : adversaryTypeLabel(normalizedActorType);
+      const typeColor = colorMap[colorKey] || colorMap["Unknown"] || "#333333";
 
       let typeFolder = game.folders.find(f => f.name === typeKey && f.type === "Item" && f.folder?.id === categoryFolder.id);
       if (!typeFolder) {
@@ -1243,7 +1298,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       if (!featureType) return typeFolder;
 
       // 6. Find or Create Feature Type Folder (Action, Reaction, Passive)
-      const featureTypeKey = featureType.charAt(0).toUpperCase() + featureType.slice(1).toLowerCase();
+      const featureTypeKey = featureFormLabel(featureType);
 
       let featureTypeFolder = game.folders.find(f => f.name === featureTypeKey && f.type === "Item" && f.folder?.id === typeFolder.id);
       if (!featureTypeFolder) {
@@ -1628,7 +1683,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
    */
   static parseFeatureData(text) {
       const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-      if (lines.length === 0) throw new Error("Empty feature block");
+      if (lines.length === 0) throw new Error(localize("Importer.emptyFeatureBlock"));
 
       const firstLine = lines[0];
       let name = firstLine;
@@ -1676,7 +1731,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
    */
   static parseSimpleItemData(text, type) {
       const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-      if (lines.length === 0) throw new Error("Empty item block");
+      if (lines.length === 0) throw new Error(localize("Importer.emptyItemBlock"));
 
       const name = lines[0];
       let description = lines.length > 1 ? lines.slice(1).join(" ") : "";
@@ -1736,7 +1791,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
    */
   static parseDomainCardData(text) {
       const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-      if (lines.length < 3) throw new Error("Invalid Domain Card format. Needs Title, Level/Domain/Type, and Cost.");
+      if (lines.length < 3) throw new Error(localize("Importer.invalidDomainCardFormat"));
 
       const name = lines[0];
       const secondLine = lines[1];
@@ -1747,7 +1802,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       // Using greedy match for domain to allow spaces if needed, but assuming type is last word
       const typeMatch = secondLine.match(/^Level\s+(\d+)\s+(.+?)\s+(Spell|Ability|Grimoire)$/i);
       if (!typeMatch) {
-          throw new Error("Invalid Line 2 format. Expected: 'Level X DOMAIN TYPE'");
+          throw new Error(localize("Importer.invalidDomainCardLine2"));
       }
 
       const level = parseInt(typeMatch[1], 10);
@@ -1759,16 +1814,13 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       const domain = domainMap[domainRaw.toLowerCase()];
 
       if (!domain) {
-          throw new Error(
-              `Domain "${domainRaw}" is not a valid choice. ` +
-              `Check available domains in the system or homebrew settings.`
-          );
+          throw new Error(format("Importer.invalidDomainChoice", { domain: domainRaw }));
       }
 
       // Parse Line 3: Recall Cost: Y
       const costMatch = thirdLine.match(/^Recall\s*Cost:\s*(\d+)$/i);
       if (!costMatch) {
-          throw new Error("Invalid Line 3 format. Expected: 'Recall Cost: Y'");
+          throw new Error(localize("Importer.invalidDomainCardLine3"));
       }
       const recallCost = parseInt(costMatch[1], 10);
 
@@ -1812,7 +1864,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
    */
   static parseWeaponData(text) {
       const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-      if (lines.length === 0) throw new Error("Empty weapon block");
+      if (lines.length === 0) throw new Error(localize("Importer.emptyWeaponBlock"));
 
       let firstLine = lines[0];
       const descriptionLines = lines.length > 1 ? lines.slice(1) : [];
@@ -1838,7 +1890,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       const match = firstLine.match(coreRegex);
 
       if (!match) {
-          throw new Error("Invalid weapon format. Could not find sequence: Trait Range Damage Burden");
+          throw new Error(localize("Importer.invalidWeaponFormat"));
       }
 
       // Extract parts
@@ -1980,7 +2032,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
    */
   static parseArmorData(text) {
       const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-      if (lines.length === 0) throw new Error("Empty armor block");
+      if (lines.length === 0) throw new Error(localize("Importer.emptyArmorBlock"));
 
       let firstLine = lines[0];
       const descriptionLines = lines.length > 1 ? lines.slice(1) : [];
@@ -1999,7 +2051,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       const match = firstLine.match(thresholdRegex);
 
       if (!match) {
-          throw new Error("Invalid armor format. Could not find: Thresholds (X/Y) and Base Score");
+          throw new Error(localize("Importer.invalidArmorFormat"));
       }
 
       const major = parseInt(match[1], 10);
@@ -2065,7 +2117,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
                         .map(l => l.trim())
                         .filter(l => l.length > 0);
 
-      if (rawLines.length === 0) throw new Error("Text content is empty.");
+      if (rawLines.length === 0) throw new Error(localize("Importer.emptyText"));
 
       // --- FEATURE COMPENDIUM SETUP ---
       const selectedFeaturePacks = game.settings.get("dh-statblock-importer", "selectedCompendiums") || ["dh-statblock-importer.all-features"];
@@ -2151,11 +2203,11 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
               }
 
               if (actorType === "adversary" && !StatblockImporter.VALID_ADVERSARY_TYPES.includes(systemData.type)) {
-                  throw new Error(`Invalid adversary type: "${rawType}". Valid types are: ${StatblockImporter.VALID_ADVERSARY_TYPES.join(", ")}`);
+                  throw new Error(format("Importer.invalidAdversaryType", { type: rawType, types: StatblockImporter.VALID_ADVERSARY_TYPES.join(", ") }));
               }
 
               if (actorType === "environment" && !StatblockImporter.VALID_ENVIRONMENT_TYPES.includes(systemData.type)) {
-                  throw new Error(`Invalid environment type: "${rawType}". Valid types are: ${StatblockImporter.VALID_ENVIRONMENT_TYPES.join(", ")}`);
+                  throw new Error(format("Importer.invalidEnvironmentType", { type: rawType, types: StatblockImporter.VALID_ENVIRONMENT_TYPES.join(", ") }));
               }
 
               captureState = "description";
@@ -2271,13 +2323,14 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
               // Process ungrouped actors under "Adversaries" label
               if (ungroupedActors.length > 0) {
                   const foundUuids = [];
+                  const adversariesLabel = localizeKey("DAGGERHEART.UI.ItemBrowser.folders.adversaries", actorTypeLabel("adversary"));
                   for (const actorName of ungroupedActors) {
                       const found = adversaryIndex.find(a => a.name.toLowerCase() === actorName.toLowerCase() && a.type === "adversary");
                       if (found) {
                           foundUuids.push(found.uuid);
-                          previewDetails.push({ name: actorName, label: "Adversaries", found: true });
+                          previewDetails.push({ name: actorName, label: adversariesLabel, found: true });
                       } else {
-                          previewDetails.push({ name: actorName, label: "Adversaries", found: false });
+                          previewDetails.push({ name: actorName, label: adversariesLabel, found: false });
                       }
                   }
 
@@ -2285,7 +2338,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
                       hasFoundActors = true;
                       const groupId = foundry.utils.randomID();
                       potentialAdversaries[groupId] = {
-                          label: "Adversaries",
+                          label: adversariesLabel,
                           adversaries: foundUuids
                       };
                   }
@@ -2412,7 +2465,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
                       return;
                   }
               } catch (error) {
-                  StatblockImporter.errorLog(`Failed to load compendium feature: ${currentFeature.name}`, error, { uuid: found.uuid });
+                  StatblockImporter.errorLog(format("Importer.failedCompendiumFeature", { name: currentFeature.name }), error, { uuid: found.uuid });
               }
           }
           

@@ -21,6 +21,19 @@
     "styles/module.css"
   ],
 
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    },
+    {
+      "lang": "ru",
+      "name": "Русский",
+      "path": "lang/ru.json"
+    }
+  ],
+
 	"media": [{
 		"type": "setup",
 		"url": "modules/dh-statblock-importer/assets/images/thumbnail.webp",
@@ -45,7 +58,7 @@
 
   "packs": [
     {
-      "label": "All Features",
+      "label": "DH_STATBLOCK_IMPORTER.Packs.allFeatures",
       "type": "Item",
       "name": "all-features",
       "path": "packs/all-features",
@@ -58,7 +71,7 @@
       "banner": "modules/dh-statblock-importer/assets/images/banner.webp" 
     },
     {
-      "label": "Macros",
+      "label": "DH_STATBLOCK_IMPORTER.Packs.macros",
       "type": "Macro",
       "name": "macros",
       "path": "packs/macros",
@@ -71,7 +84,7 @@
       "banner": "modules/dh-statblock-importer/assets/images/banner.webp" 
     },
     {
-      "label": "Instructions",
+      "label": "DH_STATBLOCK_IMPORTER.Packs.instructions",
       "type": "JournalEntry",
       "name": "journal",
       "path": "packs/journal",
@@ -87,7 +100,7 @@
 
   "packFolders": [
     {
-      "name": "Statblock Importer",
+      "name": "DH_STATBLOCK_IMPORTER.Packs.folder",
       "sorting": "a",
       "color": "#5c0547",
       "packs": [        
