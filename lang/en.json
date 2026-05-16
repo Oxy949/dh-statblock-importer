@@ -198,12 +198,100 @@
     "Actions": {
       "attack": "Attack",
       "damageFormula": "Damage ({formula})",
+      "gainFear": "Gain Fear",
+      "gainFearValue": "Gain Fear: {value}",
       "markStress": "Mark Stress",
       "markStressValue": "Mark Stress: {value}",
+      "clearHitPoints": "Clear Hit Point",
+      "clearHitPointsValue": "Clear Hit Points: {value}",
+      "clearHitPointsAll": "Clear Hit Points",
+      "clearStress": "Clear Stress",
+      "clearStressValue": "Clear Stress: {value}",
+      "clearStressAll": "Clear Stress",
+      "clearHitPointsAndStress": "Clear HP & Stress",
+      "clearHitPointsAndStressValue": "Clear HP & Stress: {value}",
+      "clearHitPointsAndStressAll": "Clear HP & Stress",
       "spendFear": "Spend Fear",
       "spendFearValue": "Spend Fear: {value}",
       "spendHope": "Spend Hope",
-      "spendHopeValue": "Spend Hope: {value}"
+      "spendHopeValue": "Spend Hope: {value}",
+      "loseHope": "Lose Hope",
+      "loseHopeValue": "Lose Hope: {value}"
+    },
+    "Parser": {
+      "sections": {
+        "features": "features"
+      },
+      "actor": {
+        "tierLine": "^Tier\\s+(\\d+)\\s*,?\\s*(.+)$",
+        "hordeHp": "^(.+?)\\s*\\(\\s*(\\d+)\\s*\\/\\s*(?:HP)\\s*\\)$"
+      },
+      "actorTypes": {
+        "bruiser": "bruiser",
+        "horde": "horde",
+        "leader": "leader",
+        "minion": "minion",
+        "ranged": "ranged",
+        "skulk": "skulk",
+        "social": "social",
+        "solo": "solo",
+        "standard": "standard",
+        "support": "support",
+        "exploration": "exploration",
+        "traversal": "traversal",
+        "event": "event"
+      },
+      "labels": {
+        "motives": "Motives\\s*(?:&|and)\\s*Tactics",
+        "impulses": "Impulses",
+        "potentialAdversaries": "Potential\\s+Adversaries",
+        "difficulty": "Difficulty",
+        "thresholds": "Thresholds",
+        "hitPoints": "HP",
+        "stress": "Stress",
+        "attackModifier": "ATK",
+        "experience": "Experience"
+      },
+      "featureForms": {
+        "action": "action",
+        "reaction": "reaction",
+        "passive": "passive"
+      },
+      "ranges": {
+        "veryFar": "very\\s+far",
+        "veryClose": "very\\s+close",
+        "melee": "melee",
+        "close": "close",
+        "far": "far"
+      },
+      "damageTypes": {
+        "physical": "phy|physical",
+        "magical": "mag|magical"
+      },
+      "numbers": {
+        "one": "a|an|one"
+      },
+      "resources": {
+        "hitPoints": "\\b(?:hit\\s*points?|hp)\\b",
+        "stress": "\\bstress\\b"
+      },
+      "actions": {
+        "gainFear": "(?:gain|receive|get)\\s+(?:a\\s+|one\\s+|(\\d+)\\s+)?fear",
+        "markStress": "(?:mark|spend)\\s+(?:a\\s+|one\\s+|(\\d+)\\s+)?stress",
+        "spendFear": "spend\\s+(?:a\\s+|one\\s+|(\\d+)\\s+)?fear",
+        "spendHope": "spend\\s+(?:a\\s+|one\\s+|(\\d+)\\s+)?hope",
+        "loseHope": "(?:lose|loses|lost)\\s+(?:a\\s+|one\\s+|(\\d+)\\s+)?hope",
+        "clearVerb": "clear|heal|recover|remove",
+        "fullClear": "\\b(?:all|fully)\\b",
+        "choice": "\\bor\\b",
+        "attack": "make\\s+(?:an?\\s+)?(?:standard\\s+)?attack(?:\\s+roll)?",
+        "damageContext": "\\bdamage\\b",
+        "directMagicalDamage": "direct\\s+(?:magic|magical)\\s+damage",
+        "directPhysicalDamage": "direct\\s+physical\\s+damage",
+        "directDamage": "direct\\s+damage",
+        "magicalDamage": "(?:magic|magical)\\s+damage",
+        "physicalDamage": "physical\\s+damage"
+      }
     },
     "CodeDialog": {
       "Title": "Feature Code Generator",

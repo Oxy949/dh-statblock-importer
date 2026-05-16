@@ -198,12 +198,100 @@
     "Actions": {
       "attack": "Атака",
       "damageFormula": "Урон ({formula})",
+      "gainFear": "Получить Страх",
+      "gainFearValue": "Получить Страх: {value}",
       "markStress": "Отметить Стресс",
       "markStressValue": "Отметить Стресс: {value}",
+      "clearHitPoints": "Очистить Рану",
+      "clearHitPointsValue": "Очистить Раны: {value}",
+      "clearHitPointsAll": "Очистить Раны",
+      "clearStress": "Очистить Стресс",
+      "clearStressValue": "Очистить Стресс: {value}",
+      "clearStressAll": "Очистить Стресс",
+      "clearHitPointsAndStress": "Очистить Рану и Стресс",
+      "clearHitPointsAndStressValue": "Очистить Раны и Стресс: {value}",
+      "clearHitPointsAndStressAll": "Очистить Раны и Стресс",
       "spendFear": "Потратить Страх",
       "spendFearValue": "Потратить Страх: {value}",
       "spendHope": "Потратить Надежду",
-      "spendHopeValue": "Потратить Надежду: {value}"
+      "spendHopeValue": "Потратить Надежду: {value}",
+      "loseHope": "Потерять Надежду",
+      "loseHopeValue": "Потерять Надежду: {value}"
+    },
+    "Parser": {
+      "sections": {
+        "features": "свойства|особенности|способности|features"
+      },
+      "actor": {
+        "tierLine": "^(?:Тир|Tier)\\s+(\\d+)\\s*,?\\s*(.+)$",
+        "hordeHp": "^(.+?)\\s*\\(\\s*(\\d+)\\s*\\/\\s*(?:HP|ХП|ОЗ|рана|раны|ран)\\s*\\)$"
+      },
+      "actorTypes": {
+        "bruiser": "bruiser|громила|боец|крушитель",
+        "horde": "horde|орда",
+        "leader": "leader|лидер|главарь",
+        "minion": "minion|миньон|приспешник",
+        "ranged": "ranged|стрелок|дальний|дальнобойный",
+        "skulk": "skulk|скрытник|лазутчик|плут",
+        "social": "social|социальный",
+        "solo": "solo|соло|одиночка",
+        "standard": "standard|рядовой|стандартный|обычный",
+        "support": "support|поддержка",
+        "exploration": "exploration|исследование|исследовательское",
+        "traversal": "traversal|переход|перемещение|путешествие",
+        "event": "event|событие"
+      },
+      "labels": {
+        "motives": "Motives\\s*(?:&|and)\\s*Tactics|Мотивы\\s+(?:и|&)\\s+тактики",
+        "impulses": "Impulses|Импульсы",
+        "potentialAdversaries": "Potential\\s+Adversaries|Возможные\\s+противники",
+        "difficulty": "Difficulty|Сложность",
+        "thresholds": "Thresholds|Пороги(?:\\s+урона)?",
+        "hitPoints": "HP|Раны|ОЗ|ХП",
+        "stress": "Stress|Стресс",
+        "attackModifier": "ATK|Модификатор\\s+атаки|Мод\\.?\\s*атаки|Атака",
+        "experience": "Experience|Опыт"
+      },
+      "featureForms": {
+        "action": "action|действие|активное",
+        "reaction": "reaction|реакция",
+        "passive": "passive|пассивное|пассивная|пассивный|пассивно"
+      },
+      "ranges": {
+        "veryFar": "very\\s+far|очень\\s+далек(?:о|ая|ой|ую|ие|их|им|ими|ом)",
+        "veryClose": "very\\s+close|очень\\s+близк(?:о|ая|ой|ую|ие|их|им|ими|ом)",
+        "melee": "melee|вплотную|в\\s+упор",
+        "close": "close|ближн(?:яя|ей|юю|ий|его|ем|ее|ие|их|им|ими|ую)|близк(?:о|ая|ой|ую|ие|их|им|ими|ом)",
+        "far": "far|средн(?:яя|ей|юю|ий|его|ем|ее|ие|их|им|ими|ую)|средне|дальн(?:яя|ей|юю|ий|его|ем|ее|ие|их|им|ими|ую)|далеко"
+      },
+      "damageTypes": {
+        "physical": "phy|physical|физ(?:\\.|ический|ическая|ическое|ического|ических|ическим|ическую)?",
+        "magical": "mag|magical|маг(?:\\.|ический|ическая|ическое|ического|ических|ическим|ическую)?"
+      },
+      "numbers": {
+        "one": "a|an|one|один|одна|одно|одну"
+      },
+      "resources": {
+        "hitPoints": "\\b(?:hit\\s*points?|hp)\\b|(?:\\b|[^\\p{L}])ран(?:у|ы|а|ам|ами|ах)?(?:\\b|[^\\p{L}])|(?:\\b|[^\\p{L}])оз(?:\\b|[^\\p{L}])",
+        "stress": "\\bstress\\b|стресс(?:а|ы|ом|е)?"
+      },
+      "actions": {
+        "gainFear": "(?:gain|receive|get|получ(?:ите|ить|ает(?:е)?|ают)|возьм(?:ите|ет|ут)|взять)\\s+(?:a\\s+|one\\s+|(\\d+)\\s+|один\\s+|одну\\s+)?(?:fear|страх(?:а)?)",
+        "markStress": "(?:mark|spend|получ(?:ите|ить|ает(?:е)?|ают)|отметьте|отметить|потратьте|потратить)\\s+(?:a\\s+|one\\s+|(\\d+)\\s+|один\\s+|одну\\s+)?(?:stress|стресс(?:а)?)",
+        "spendFear": "(?:spend|потратьте|потратить)\\s+(?:a\\s+|one\\s+|(\\d+)\\s+|один\\s+|одну\\s+)?(?:fear|страх(?:а)?)",
+        "spendHope": "(?:spend|потратьте|потратить)\\s+(?:a\\s+|one\\s+|(\\d+)\\s+|один\\s+|одну\\s+)?(?:hope|надежд[уы]?)",
+        "loseHope": "(?:lose|loses|lost|потер(?:яйте|ять|яет|яла|ял|яли|яют)|теря(?:ет|ют|ете|ть))\\s+(?:a\\s+|one\\s+|(\\d+)\\s+|один\\s+|одну\\s+)?(?:hope|надежд[уы]?)",
+        "clearVerb": "clear|heal|recover|remove|очист(?:ите|ить)|сним(?:ите|ать)|убер(?:ите|ать)|восстанов(?:ите|ить)",
+        "fullClear": "\\b(?:all|fully)\\b|полностью|(?:все|всю)\\s+(?:раны|рану|стресс)",
+        "choice": "\\bor\\b|или",
+        "attack": "make\\s+(?:an?\\s+)?(?:standard\\s+)?attack(?:\\s+roll)?|соверш(?:ите|ить|ает|ают)\\s+(?:стандартную\\s+)?атак(?:у|и)",
+        "damageContext": "\\bdamage\\b|урон",
+        "directMagicalDamage": "direct\\s+(?:magic|magical)\\s+damage|прям(?:ой|ого|ому|ым)?\\s+маг(?:ический|ического|ическому|ическим)?\\s+урон",
+        "directPhysicalDamage": "direct\\s+physical\\s+damage|прям(?:ой|ого|ому|ым)?\\s+физ(?:ический|ического|ическому|ическим)?\\s+урон",
+        "directDamage": "direct\\s+damage|прям(?:ой|ого|ому|ым)?\\s+урон",
+        "magicalDamage": "(?:magic|magical)\\s+damage|маг(?:ический|ического|ическому|ическим)?\\s+урон",
+        "physicalDamage": "physical\\s+damage|физ(?:ический|ического|ическому|ическим)?\\s+урон"
+      }
     },
     "CodeDialog": {
       "Title": "Генератор кода особенностей",
