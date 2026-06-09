@@ -7,16 +7,22 @@
  */
 
 import { MODULE_ID } from "./constants.js";
+import { featureFormLabel, localize, localizeSettingValue, moduleKey } from "./i18n.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 export class StatblockConfig extends HandlebarsApplicationMixin(ApplicationV2) {
 
+    constructor(options = {}) {
+        super(options);
+        this.options.window.title = localize("Config.Title");
+    }
+
     static DEFAULT_OPTIONS = {
         id: "dh-statblock-config",
         tag: "form",
         window: {
-            title: "Importer Configuration",
+            title: moduleKey("Config.Title"),
             icon: "fas fa-cog",
             resizable: false,
             width: 520,
@@ -128,22 +134,25 @@ export class StatblockConfig extends HandlebarsApplicationMixin(ApplicationV2) {
             .sort((a, b) => a.title.localeCompare(b.title));
 
         // --- General Settings ---
-        const adversaryFolderName = game.settings.get(MODULE_ID, "adversaryFolderName");
-        const environmentFolderName = game.settings.get(MODULE_ID, "environmentFolderName");
-        const lootFolderName = game.settings.get(MODULE_ID, "lootFolderName");
-        const consumableFolderName = game.settings.get(MODULE_ID, "consumableFolderName");
-        const weaponFolderName = game.settings.get(MODULE_ID, "weaponFolderName");
-        const armorFolderName = game.settings.get(MODULE_ID, "armorFolderName");
-        const featureFolderName = game.settings.get(MODULE_ID, "featureFolderName");
-        const domainCardFolderName = game.settings.get(MODULE_ID, "domainCardFolderName");
+        const folderSetting = (settingKey, fallbackPath) =>
+            localizeSettingValue(game.settings.get(MODULE_ID, settingKey), fallbackPath);
+
+        const adversaryFolderName = folderSetting("adversaryFolderName", "Folders.importedAdversaries");
+        const environmentFolderName = folderSetting("environmentFolderName", "Folders.importedEnvironments");
+        const lootFolderName = folderSetting("lootFolderName", "Folders.importedLoot");
+        const consumableFolderName = folderSetting("consumableFolderName", "Folders.importedConsumables");
+        const weaponFolderName = folderSetting("weaponFolderName", "Folders.importedWeapons");
+        const armorFolderName = folderSetting("armorFolderName", "Folders.importedArmors");
+        const featureFolderName = folderSetting("featureFolderName", "Folders.importedFeatures");
+        const domainCardFolderName = folderSetting("domainCardFolderName", "Folders.importedDomainCards");
         const separatorMode = game.settings.get(MODULE_ID, "separatorMode") || "blankLine";
         const secretPrompts = game.settings.get(MODULE_ID, "secretPrompts");
 
         const icons = game.settings.get(MODULE_ID, "featureIcons");
         const featureIcons = [
-            { form: "passive", label: "Passive", src: icons.passive },
-            { form: "action", label: "Action", src: icons.action },
-            { form: "reaction", label: "Reaction", src: icons.reaction }
+            { form: "passive", label: featureFormLabel("passive"), src: icons.passive },
+            { form: "action", label: featureFormLabel("action"), src: icons.action },
+            { form: "reaction", label: featureFormLabel("reaction"), src: icons.reaction }
         ];
         const featureIconSource = game.settings.get(MODULE_ID, "featureIconSource");
         const featureIconOverrideCompendium = game.settings.get(MODULE_ID, "featureIconOverrideCompendium");

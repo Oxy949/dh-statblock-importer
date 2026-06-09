@@ -8,6 +8,7 @@
 
 import { StatblockImporter } from "./app.js";
 import { StatblockExporter } from "./export.js";
+import { localize } from "./i18n.js";
 
 /**
  * Global API object for the module.
@@ -50,7 +51,7 @@ Hooks.on("renderActorDirectory", (app, html) => {
     btn.style.flex = "0 0 100%";
     btn.style.maxWidth = "100%";
     btn.style.marginTop = "0";
-    btn.innerHTML = `<i class="fas fa-file-import"></i> Statblock Importer`;
+    btn.innerHTML = `<i class="fas fa-file-import"></i> ${localize("Main.button")}`;
 
     btn.addEventListener("click", (e) => {
       e.preventDefault();
@@ -69,7 +70,7 @@ Hooks.on("renderDaggerheartMenu", (app, html) => {
   const btn = document.createElement("button");
   btn.type = "button";
   btn.style.width = "100%";
-  btn.innerHTML = `<i class="fas fa-file-import"></i> Open Statblock Importer`;
+  btn.innerHTML = `<i class="fas fa-file-import"></i> ${localize("Main.openImporter")}`;
   btn.onclick = (e) => {
     e.preventDefault();
     SI.Open();
@@ -79,7 +80,7 @@ Hooks.on("renderDaggerheartMenu", (app, html) => {
   btn2.type = "button";
   btn2.style.width = "100%";
   btn2.style.marginTop = "5px";
-  btn2.innerHTML = `<i class="fas fa-plus-square"></i> Create Statblock`;
+  btn2.innerHTML = `<i class="fas fa-plus-square"></i> ${localize("Main.createStatblock")}`;
   btn2.onclick = (e) => {
     e.preventDefault();
     SI.CreateStatblock();
@@ -89,7 +90,7 @@ Hooks.on("renderDaggerheartMenu", (app, html) => {
   if (fieldset) {
     const newFieldset = document.createElement("fieldset");
     const legend = document.createElement("legend");
-    legend.innerText = "Statblock Importer";
+    legend.innerText = localize("Main.legend");
     newFieldset.appendChild(legend);
     newFieldset.appendChild(btn);
     newFieldset.appendChild(btn2);
