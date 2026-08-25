@@ -1443,18 +1443,15 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
 
       const tierMatch = normalized.match(StatblockImporter._parserRegex("actor.tierLine", "^Tier\\s+(\\d+)\\s*,?\\s*(.+)$"));
       if (tierMatch) {
-          let rawType = tierMatch[2].trim();
-          let hordeHp = null;
-          const hordeMatch = rawType.match(StatblockImporter._parserRegex("actor.hordeHp", "^(.+?)\\s*\\(\\s*(\\d+)\\s*\\/\\s*(?:HP)\\s*\\)$"));
-          if (hordeMatch) {
-              rawType = hordeMatch[1].trim();
-              hordeHp = hordeMatch[2];
-          }
+          return StatblockImporter._canonicalActorTierLine(tierMatch[1], tierMatch[2]);
+      }
 
-          const canonicalType = StatblockImporter._canonicalActorStatblockType(rawType);
-          return hordeHp
-              ? `Tier ${tierMatch[1]} ${canonicalType} (${hordeHp}/HP)`
-              : `Tier ${tierMatch[1]} ${canonicalType}`;
+      const typeFirstTierMatch = normalized.match(StatblockImporter._parserRegex(
+          "actor.typeFirstTierLine",
+          "^(.+?)\\s+(?:Tier|Rank)\\s+(\\d+)$"
+      ));
+      if (typeFirstTierMatch) {
+          return StatblockImporter._canonicalActorTierLine(typeFirstTierMatch[2], typeFirstTierMatch[1]);
       }
 
       normalized = StatblockImporter._replaceLocalizedStatLabels(normalized);
@@ -1482,6 +1479,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
           .replace(/\*\*([^*]+)\*\*/g, "$1")
           .replace(/__([^_]+)__/g, "$1")
           .replace(/\*([^*]+)\*/g, "$1")
+          .replace(/\\\s*$/, "")
           .trim();
   }
 
@@ -1542,6 +1540,21 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       ];
 
       return forms.find(([, path, fallback]) => StatblockImporter._matchesParserPattern(value, path, fallback))?.[0] || null;
+  }
+
+  static _canonicalActorTierLine(tier, type) {
+      let rawType = String(type ?? "").trim();
+      let hordeHp = null;
+      const hordeMatch = rawType.match(StatblockImporter._parserRegex("actor.hordeHp", "^(.+?)\\s*\\(\\s*(\\d+)\\s*\\/\\s*(?:HP)\\s*\\)$"));
+      if (hordeMatch) {
+          rawType = hordeMatch[1].trim();
+          hordeHp = hordeMatch[2];
+      }
+
+      const canonicalType = StatblockImporter._canonicalActorStatblockType(rawType);
+      return hordeHp
+          ? `Tier ${tier} ${canonicalType} (${hordeHp}/HP)`
+          : `Tier ${tier} ${canonicalType}`;
   }
 
   static _canonicalActorStatblockType(type) {
@@ -2010,11 +2023,15 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
           detectedActions[clearAction._id] = clearAction;
       }
 
-      // Detect "TRAIT Reaction Roll" patterns (e.g., "Strength Reaction Roll", "Agility Reaction Roll")
-      const traits = ["Strength", "Instinct", "Knowledge", "Finesse", "Presence", "Agility"];
+      // Detect localized reaction roll patterns and store the canonical trait key.
+      const traits = ["strength", "instinct", "knowledge", "finesse", "presence", "agility"];
       for (const trait of traits) {
-          const reactionRollRegex = new RegExp(`${trait}\\s+Reaction\\s+Roll`, "i");
-          if (reactionRollRegex.test(searchText)) {
+          const traitPattern = StatblockImporter._parserPattern(`traits.${trait}`, trait);
+          const reactionRollPattern = StatblockImporter
+              ._parserPattern("actions.reactionRoll", "{trait}\\s+Reaction\\s+Roll")
+              .replace(/\{trait\}/g, `(?:${traitPattern})`);
+          const reactionRollMatch = searchText.match(new RegExp(reactionRollPattern, "i"));
+          if (reactionRollMatch) {
               const actionId = foundry.utils.randomID(16);
               detectedActions[actionId] = {
                   type: "attack",
@@ -2052,11 +2069,11 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
                       useDefault: false
                   },
                   save: {
-                      trait: trait.toLowerCase(),
+                      trait,
                       difficulty: null,
                       damageMod: "none"
                   },
-                  name: `${trait} Reaction Roll`,
+                  name: reactionRollMatch[0],
                   range: ""
               };
           }

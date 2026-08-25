@@ -226,6 +226,7 @@
       },
       "actor": {
         "tierLine": "^Tier\\s+(\\d+)\\s*,?\\s*(.+)$",
+        "typeFirstTierLine": "^(.+?)\\s+(?:Tier|Rank)\\s+(\\d+)$",
         "hordeHp": "^(.+?)\\s*\\(\\s*(\\d+)\\s*\\/\\s*(?:HP)\\s*\\)$"
       },
       "actorTypes": {
@@ -259,6 +260,14 @@
         "reaction": "reaction",
         "passive": "passive"
       },
+      "traits": {
+        "strength": "strength",
+        "instinct": "instinct",
+        "knowledge": "knowledge",
+        "finesse": "finesse",
+        "presence": "presence",
+        "agility": "agility"
+      },
       "ranges": {
         "veryFar": "very\\s+far",
         "veryClose": "very\\s+close",
@@ -267,8 +276,8 @@
         "far": "far"
       },
       "damageTypes": {
-        "physical": "phy|physical",
-        "magical": "mag|magical"
+        "physical": "phy|physical(?:\\s+damage)?",
+        "magical": "mag|magical(?:\\s+damage)?"
       },
       "numbers": {
         "one": "a|an|one"
@@ -278,6 +287,7 @@
         "stress": "\\bstress\\b"
       },
       "actions": {
+        "reactionRoll": "{trait}\\s+Reaction\\s+Roll",
         "gainFear": "(?:gain|receive|get)\\s+(?:a\\s+|one\\s+|(\\d+)\\s+)?fear",
         "markStress": "(?:mark|spend)\\s+(?:a\\s+|one\\s+|(\\d+)\\s+)?stress",
         "spendFear": "spend\\s+(?:a\\s+|one\\s+|(\\d+)\\s+)?fear",

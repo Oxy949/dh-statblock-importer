@@ -1,7 +1,7 @@
 {
   "id": "dh-statblock-importer",
   "title": "Daggerheart: Stats Toolbox",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Import using a statblock.",
   "compatibility": {
     "minimum": "14",
