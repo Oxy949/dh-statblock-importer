@@ -30,6 +30,8 @@ Hooks.once("init", () => {
 });
 
 Hooks.on("renderActorDirectory", (app, html) => {
+  if (!game.user.isGM) return;
+
   const element = (html instanceof HTMLElement) ? html : html[0];
   const actionButtons = element.querySelector(".header-actions");
 
@@ -52,6 +54,8 @@ Hooks.on("renderActorDirectory", (app, html) => {
 });
 
 Hooks.on("renderDaggerheartMenu", (app, html) => {
+  if (!game.user.isGM) return;
+
   const element = (html instanceof HTMLElement) ? html : html[0];
 
   const btn = document.createElement("button");

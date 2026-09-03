@@ -275,12 +275,11 @@ export class StatblockExporter extends HandlebarsApplicationMixin(ApplicationV2)
             }
 
             // Damage
-            const exportParts = Object.values(attack.damage?.parts ?? {});
-            if (exportParts.length > 0) {
-                const dmgPart = exportParts[0];
-                const dmgStr = this._formatDamage(dmgPart);
-                if (dmgStr) atkParts.push(dmgStr);
-            }
+            // System 2.x moved the attack's HP damage from the `damage.parts` map into
+            // `damage.main`. DHBaseAction.migrateData strips `parts` when the actor loads,
+            // so a live actor never exposes it — reading `parts` here returned nothing.
+            const dmgStr = this._formatDamage(attack.damage?.main);
+            if (dmgStr) atkParts.push(dmgStr);
 
             if (atkParts.length > 0) {
                 lines.push(atkParts.join(" | "));
@@ -308,9 +307,11 @@ export class StatblockExporter extends HandlebarsApplicationMixin(ApplicationV2)
                 
                 // Logic to append Horde damage if actor is horde and feature is named "Horde"
                 if (sys.type === "horde" && featureName.trim().toLowerCase() === "horde") {
-                    const dmgPart = sys.attack?.damage?.parts?.[0];
-                    if (dmgPart?.valueAlt) {
-                        const val = dmgPart.valueAlt;
+                    // `valueAlt` is a non-nullable embedded model, so it always exists once
+                    // `main` is populated — gate on `main`, which is null when the attack
+                    // carries no damage at all.
+                    const val = sys.attack?.damage?.main?.valueAlt;
+                    if (val) {
                         let diceStr = "";
                         
                         if (val.custom?.enabled && val.custom?.formula) {
@@ -819,7 +820,9 @@ export class StatblockExporter extends HandlebarsApplicationMixin(ApplicationV2)
         if (val.custom?.enabled && val.custom?.formula) {
             diceStr = val.custom.formula;
         } else if (val.dice) {
-            const mult = val.flatMultiplier > 1 ? val.flatMultiplier : "";
+            // Statblocks always spell the dice count out ("1d10+2", never "d10+2"), which is
+            // also the form the importer's parser expects back, so never elide a count of 1.
+            const mult = val.flatMultiplier ?? 1;
             const bonus = val.bonus ? (val.bonus > 0 ? `+${val.bonus}` : `${val.bonus}`) : "";
             diceStr = `${mult}${val.dice}${bonus}`;
         }

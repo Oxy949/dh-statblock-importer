@@ -53,36 +53,35 @@ export const TEMPLATES = {
         },
         areas: [],
         damage: {
-          parts: {
-            hitPoints: {
-              type: ["physical"],
-              value: {
-                multiplier: "prof",
-                dice: "d8",
-                flatMultiplier: 1,
-                bonus: null,
-                custom: {
-                  enabled: false,
-                  formula: ""
-                }
-              },
-              applyTo: "hitPoints",
-              resultBased: false,
-              valueAlt: {
-                multiplier: "flat",
-                flatMultiplier: 1,
-                dice: "d6",
-                bonus: null,
-                custom: {
-                  enabled: false,
-                  formula: ""
-                }
-              },
-              base: false
-            }
+          main: {
+            type: ["physical"],
+            value: {
+              multiplier: "prof",
+              dice: "d8",
+              flatMultiplier: 1,
+              bonus: null,
+              custom: {
+                enabled: false,
+                formula: ""
+              }
+            },
+            applyTo: "hitPoints",
+            resultBased: false,
+            valueAlt: {
+              multiplier: "flat",
+              flatMultiplier: 1,
+              dice: "d6",
+              bonus: null,
+              custom: {
+                enabled: false,
+                formula: ""
+              }
+            },
+            base: false,
+            includeBase: false,
+            direct: false
           },
-          includeBase: false,
-          direct: false
+          resources: {}
         },
         description: "",
         originItem: {
@@ -226,9 +225,8 @@ export const TEMPLATES = {
     cost: [],
     uses: { value: null, max: "", recovery: null, consumeOnSuccess: false },
     damage: {
-      parts: {},
-      includeBase: false,
-      direct: false
+      main: null,
+      resources: {}
     },
     target: { type: "any", amount: null },
     effects: [],
@@ -270,30 +268,29 @@ export const TEMPLATES = {
     cost: [],
     uses: { value: null, max: "", recovery: null, consumeOnSuccess: false },
     damage: {
-      parts: {
-        hitPoints: {
-          resultBased: false,
-          value: {
-            custom: { enabled: true, formula: "" },
-            multiplier: "flat",
-            flatMultiplier: 1,
-            dice: "d6",
-            bonus: null
-          },
-          applyTo: "hitPoints",
-          type: ["physical"],
-          base: false,
-          valueAlt: {
-            multiplier: "flat",
-            flatMultiplier: 1,
-            dice: "d6",
-            bonus: null,
-            custom: { enabled: false, formula: "" }
-          }
-        }
+      main: {
+        resultBased: false,
+        value: {
+          custom: { enabled: true, formula: "" },
+          multiplier: "flat",
+          flatMultiplier: 1,
+          dice: "d6",
+          bonus: null
+        },
+        applyTo: "hitPoints",
+        type: ["physical"],
+        base: false,
+        valueAlt: {
+          multiplier: "flat",
+          flatMultiplier: 1,
+          dice: "d6",
+          bonus: null,
+          custom: { enabled: false, formula: "" }
+        },
+        includeBase: false,
+        direct: false
       },
-      includeBase: false,
-      direct: false
+      resources: {}
     },
     target: { type: "any", amount: null },
     effects: [],
@@ -335,30 +332,29 @@ export const TEMPLATES = {
     cost: [],
     uses: { value: null, max: "", recovery: null, consumeOnSuccess: false },
     damage: {
-      parts: {
-        hitPoints: {
-          value: {
-            custom: { enabled: true, formula: "" },
-            multiplier: "flat",
-            flatMultiplier: 1,
-            dice: "d6",
-            bonus: null
-          },
-          applyTo: "hitPoints",
-          type: ["physical"],
-          base: false,
-          resultBased: false,
-          valueAlt: {
-            multiplier: "flat",
-            flatMultiplier: 1,
-            dice: "d6",
-            bonus: null,
-            custom: { enabled: false, formula: "" }
-          }
-        }
+      main: {
+        value: {
+          custom: { enabled: true, formula: "" },
+          multiplier: "flat",
+          flatMultiplier: 1,
+          dice: "d6",
+          bonus: null
+        },
+        applyTo: "hitPoints",
+        type: ["physical"],
+        base: false,
+        resultBased: false,
+        valueAlt: {
+          multiplier: "flat",
+          flatMultiplier: 1,
+          dice: "d6",
+          bonus: null,
+          custom: { enabled: false, formula: "" }
+        },
+        includeBase: false,
+        direct: true
       },
-      includeBase: false,
-      direct: true
+      resources: {}
     },
     target: { type: "any", amount: null },
     effects: [],
@@ -505,36 +501,35 @@ export const TEMPLATES = {
         },
         areas: [],
         damage: {
-          parts: {
-            hitPoints: {
-              type: ["physical"],
-              value: {
-                multiplier: "flat",
-                flatMultiplier: 1,
-                dice: "d6",
-                bonus: null,
-                custom: {
-                  enabled: false,
-                  formula: ""
-                }
-              },
-              applyTo: "hitPoints",
-              resultBased: false,
-              valueAlt: {
-                multiplier: "flat",
-                flatMultiplier: 1,
-                dice: "d6",
-                bonus: null,
-                custom: {
-                  enabled: false,
-                  formula: ""
-                }
-              },
-              base: false
-            }
+          main: {
+            type: ["physical"],
+            value: {
+              multiplier: "flat",
+              flatMultiplier: 1,
+              dice: "d6",
+              bonus: null,
+              custom: {
+                enabled: false,
+                formula: ""
+              }
+            },
+            applyTo: "hitPoints",
+            resultBased: false,
+            valueAlt: {
+              multiplier: "flat",
+              flatMultiplier: 1,
+              dice: "d6",
+              bonus: null,
+              custom: {
+                enabled: false,
+                formula: ""
+              }
+            },
+            base: false,
+            includeBase: false,
+            direct: false
           },
-          includeBase: false,
-          direct: false
+          resources: {}
         },
         baseAction: false,
         description: "",

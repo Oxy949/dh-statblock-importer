@@ -1,3 +1,14 @@
+# 0.3.2
+
+- Requires Daggerheart 2.9.1 or newer
+- Homebrew feature template (the module skeleton linked from the Instructions journal) now declares v14 compatibility
+## Schema update for Daggerheart 2.9.1
+
+- [Fixed] Create Statblock produced an attack line with no damage. The system moved the attack's HP damage from `damage.parts` into `damage.main`, and `DHBaseAction.migrateData` strips `parts` when an actor loads, so the exporter was reading a field that no longer exists on a live actor.
+- [Fixed] The `Horde (XdY)` suffix was never restored on export. It read `damage.parts[0]`, which matched nothing even under the old schema, since `parts` was keyed by `"hitPoints"` rather than indexed.
+- [Fixed] Exported damage dropped a dice count of 1 (`d10+2` instead of `1d10+2`), which is not the format statblocks use or the importer expects back.
+- [Changed] `damage.parts` replaced by `damage.main` + `damage.resources` throughout the importer — weapon attack, adversary attack, Horde alternate damage, and every inline action damage. `includeBase` and `direct` moved inside `main`. The importer no longer depends on the system's backward-compatibility shim.
+
 # 0.3.1
 
 - The Forge filepicker support
