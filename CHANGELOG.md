@@ -1,3 +1,13 @@
+# 0.3.4
+
+- [Added] Countdown actions ([#7](https://github.com/brunocalado/dh-statblock-importer/issues/7)). `Countdown (6)`, `Countdown (1d8)`, `Countdown (Loop 1d6)`, `Countdown (Increasing 4)` and `Countdown (Decreasing 8)` in a description create a "Start Countdown" action. It adds an encounter countdown named after the feature to the tracker and rolls the start value when it is a dice formula. It is ticked down manually, because the text does not reliably say what makes a countdown tick. `Countdown (see "...")` or a countdown with no value creates nothing.
+- [Fixed] Dice that are not damage created damage actions. Any description containing the word "damage" turned every dice formula into a damage action, e.g. "mark 1d4 Stress", "1d6 targets" or "Countdown (Loop 2d6)". A damage action now needs the formula directly before `[direct] [physical|magic] damage`.
+- [Fixed] Damage type and direct were applied to the whole description, so "3d8 direct physical damage, then 2d6 magic damage" produced two direct physical actions. Each damage action now reads its own type and direct flag.
+- [Fixed] `mag damage` created a physical damage action. The abbreviations `phy` and `mag`, which the formatting prompt in the Instructions journal asks for, now work like `physical` and `magic`.
+- [Added] Flat damage with an explicit type, such as `12 direct magic damage` or `5 physical damage`, creates a damage action. A number with no type, as in "for every 6 damage a PC deals", does not.
+- [Changed] Dice inside `Countdown (...)` are no longer wrapped as `[[/r ]]` inline rolls; the countdown action rolls them itself.
+- [Changed] Instructions journal: "Action Creation Rules" rewritten for the new damage rule, with a new Countdowns section and a full feature example.
+
 # 0.3.3
 
 - Requires Daggerheart 2.10.6 or newer

@@ -1324,20 +1324,25 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
    */
   static wrapDiceRolls(text) {
       if (!text) return text;
-      // First handle dice with modifiers (with optional spaces)
-      let result = text.replace(/\b(\d+d\d+)\s*([+-])\s*(\d+)\b/g, '[[/r $1$2$3]]');
-      // Then handle plain dice (only if not followed by +/- which would have been caught above)
-      result = result.replace(/\b(\d+d\d+)\b(?!\s*[+-])/g, '[[/r $1]]');
-      return result;
+      // "Countdown (Loop 1d6)" segments stay raw: the countdown action rolls its own start value,
+      // and detectActionsInDescription reads the formula from the unwrapped text.
+      return text.split(/(Countdown\s*\([^)]*\))/i)
+          .map((part, i) => i % 2 ? part : part
+              // First handle dice with modifiers (with optional spaces)
+              .replace(/\b(\d+d\d+)\s*([+-])\s*(\d+)\b/g, '[[/r $1$2$3]]')
+              // Then handle plain dice (only if not followed by +/- which would have been caught above)
+              .replace(/\b(\d+d\d+)\b(?!\s*[+-])/g, '[[/r $1]]'))
+          .join("");
   }
 
   /**
    * Detects actions in a description text and returns an actions object.
    * This function is used by features, loot, consumables, weapons, armors, and domain cards.
    * @param {string} description - The description text to analyze
+   * @param {string} itemName - Name of the item being built, used to label created countdowns
    * @returns {Object} - An object containing detected actions keyed by random IDs
    */
-  static detectActionsInDescription(description) {
+  static detectActionsInDescription(description, itemName) {
       const detectedActions = {};
 
       // Detect "Mark Stress" / "Mark a Stress" / "Mark 1 Stress" / "Mark 2 Stress"
@@ -1537,88 +1542,103 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
           };
       }
 
-      // Detect damage dice patterns only when in damage context
-      // Check if text mentions "damage" at all (with or without type specifier)
-      const hasDamageContext = /\bdamage\b/i.test(description);
+      // Detect damage per occurrence: a formula only counts when it is directly followed by
+      // "[direct] [physical|magic] damage", and type/direct come from that same phrase. Dice elsewhere
+      // in the text ("mark 1d4 Stress", "to 1d6 targets") are not damage.
+      // Flat values ("12 direct magic damage") require an explicit type, because untyped numbers
+      // before "damage" are usually thresholds ("for every 6 damage a PC deals").
+      // "phy"/"mag" are accepted because the formatting prompt in the Instructions journal asks for them.
+      const damageRegex = /(?:\[\[\/r\s+)?(\d+d\d+(?:\s*[+-]\s*\d+)?)(?:\]\])?\s+(direct\s+)?(?:(phy(?:sical)?|mag(?:ic(?:al)?)?)\s+)?damage\b|(?<![\w+\-.])(\d+)\s+(direct\s+)?(phy(?:sical)?|mag(?:ic(?:al)?)?)\s+damage\b/gi;
 
-      if (hasDamageContext) {
-          // Detect damage type and direct flag
-          // Default: physical, direct: false
-          let damageType = ["physical"];
-          let isDirect = false;
+      for (const match of description.matchAll(damageRegex)) {
+          const formula = (match[1] ?? match[4]).replace(/\s+/g, "");
+          const isDirect = Boolean(match[2] ?? match[5]);
+          const damageType = /^mag/i.test(match[3] ?? match[6] ?? "") ? ["magical"] : ["physical"];
 
-          if (/direct\s+(?:magic|magical)\s+damage/i.test(description)) {
-              damageType = ["magical"];
-              isDirect = true;
-          } else if (/direct\s+physical\s+damage/i.test(description)) {
-              damageType = ["physical"];
-              isDirect = true;
-          } else if (/direct\s+damage/i.test(description)) {
-              // "direct damage" without type = physical + direct
-              damageType = ["physical"];
-              isDirect = true;
-          } else if (/(?:magic|magical)\s+damage/i.test(description)) {
-              damageType = ["magical"];
-          } else if (/physical\s+damage/i.test(description)) {
-              damageType = ["physical"];
-          }
-          // If just "damage" without type, defaults remain: physical, direct: false
-
-          // Pattern: XdY or XdY+Z with optional spaces, with or without [[/r ]] wrapper
-          const diceRegex = /(?:\[\[\/r\s+)?(\d+d\d+)(?:\s*([+-])\s*(\d+))?(?:\]\])?/g;
-          const diceMatches = description.matchAll(diceRegex);
-
-          for (const match of diceMatches) {
-              const diceBase = match[1]; // e.g., "1d10"
-              const sign = match[2] || ""; // e.g., "+" or "-"
-              const modifier = match[3] || ""; // e.g., "3"
-              const formula = sign && modifier ? `${diceBase}${sign}${modifier}` : diceBase;
-
-              const actionId = foundry.utils.randomID(16);
-              detectedActions[actionId] = {
-                  type: "damage",
-                  _id: actionId,
-                  systemPath: "actions",
-                  baseAction: false,
-                  description: "",
-                  chatDisplay: true,
-                  originItem: { type: "itemCollection" },
-                  actionType: "action",
-                  triggers: [],
-                  areas: [],
-                  cost: [],
-                  uses: { value: null, max: "", recovery: null, consumeOnSuccess: false },
-                  damage: {
-                      main: {
-                          value: {
-                              custom: { enabled: true, formula: formula },
-                              multiplier: "flat",
-                              flatMultiplier: 1,
-                              dice: "d6",
-                              bonus: null
-                          },
-                          applyTo: "hitPoints",
-                          type: damageType,
-                          base: false,
-                          resultBased: false,
-                          valueAlt: {
-                              multiplier: "flat",
-                              flatMultiplier: 1,
-                              dice: "d6",
-                              bonus: null,
-                              custom: { enabled: false, formula: "" }
-                          },
-                          includeBase: false,
-                          direct: isDirect
+          const actionId = foundry.utils.randomID(16);
+          detectedActions[actionId] = {
+              type: "damage",
+              _id: actionId,
+              systemPath: "actions",
+              baseAction: false,
+              description: "",
+              chatDisplay: true,
+              originItem: { type: "itemCollection" },
+              actionType: "action",
+              triggers: [],
+              areas: [],
+              cost: [],
+              uses: { value: null, max: "", recovery: null, consumeOnSuccess: false },
+              damage: {
+                  main: {
+                      value: {
+                          custom: { enabled: true, formula: formula },
+                          multiplier: "flat",
+                          flatMultiplier: 1,
+                          dice: "d6",
+                          bonus: null
                       },
-                      resources: {}
+                      applyTo: "hitPoints",
+                      type: damageType,
+                      base: false,
+                      resultBased: false,
+                      valueAlt: {
+                          multiplier: "flat",
+                          flatMultiplier: 1,
+                          dice: "d6",
+                          bonus: null,
+                          custom: { enabled: false, formula: "" }
+                      },
+                      includeBase: false,
+                      direct: isDirect
                   },
-                  target: { type: "any", amount: null },
-                  effects: [],
-                  name: `Damage (${formula})`,
-                  range: ""
-              };
-          }
+                  resources: {}
+              },
+              target: { type: "any", amount: null },
+              effects: [],
+              name: `Damage (${formula})`,
+              range: ""
+          };
+      }
+
+      // Detect "Countdown (6)" / "Countdown (1d8)" / "Countdown (Loop 1d6)" / "Countdown (Decreasing 8)".
+      // Progression is left as "custom" (ticked manually): SRD wording for what ticks a countdown
+      // is too free-form to map onto the system's progression types reliably.
+      const countdownRegex = /Countdown\s*\(\s*(?:(Loop|Increasing|Decreasing)\s+)?(\d+d\d+(?:\s*[+-]\s*\d+)?|\d+)\s*\)/gi;
+      const loopingTypes = { loop: "looping", increasing: "increasing", decreasing: "decreasing" };
+
+      for (const match of description.matchAll(countdownRegex)) {
+          const actionId = foundry.utils.randomID(16);
+          detectedActions[actionId] = {
+              type: "countdown",
+              _id: actionId,
+              systemPath: "actions",
+              baseAction: false,
+              description: "",
+              chatDisplay: true,
+              originItem: { type: "itemCollection" },
+              actionType: "action",
+              triggers: [],
+              areas: [],
+              cost: [],
+              uses: { value: null, max: "", recovery: null, consumeOnSuccess: false },
+              countdown: [{
+                  name: itemName,
+                  type: "encounter",
+                  // null defers visibility to the system's "hide new countdowns" setting
+                  hidden: null,
+                  ownership: {},
+                  progress: {
+                      looping: loopingTypes[match[1]?.toLowerCase()] ?? "noLooping",
+                      type: "custom",
+                      start: 1,
+                      current: 1,
+                      startFormula: match[2].replace(/\s+/g, "")
+                  }
+              }],
+              name: "Start Countdown",
+              range: ""
+          };
       }
 
       return detectedActions;
@@ -1655,7 +1675,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       const img = StatblockImporter._getDefaultImage("feature");
 
       // Detect actions in description
-      const detectedActions = StatblockImporter.detectActionsInDescription(description);
+      const detectedActions = StatblockImporter.detectActionsInDescription(description, name);
 
       const result = {
           name,
@@ -1693,7 +1713,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       const img = StatblockImporter._getDefaultImage(type);
 
       // Detect actions in description
-      const detectedActions = StatblockImporter.detectActionsInDescription(description);
+      const detectedActions = StatblockImporter.detectActionsInDescription(description, name);
 
       // For consumables, use the template base and always add a "Spend Use" action
       if (type === "consumable") {
@@ -1787,7 +1807,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       const img = StatblockImporter._getDefaultImage("domainCard", cardType);
 
       // Detect actions in description
-      const detectedActions = StatblockImporter.detectActionsInDescription(description);
+      const detectedActions = StatblockImporter.detectActionsInDescription(description, name);
 
       const result = {
           name,
@@ -1931,7 +1951,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       }
 
       // Detect actions in description
-      const detectedActions = StatblockImporter.detectActionsInDescription(fullDescription);
+      const detectedActions = StatblockImporter.detectActionsInDescription(fullDescription, name);
 
       // For weapons, remove "Attack" and "Damage" actions (they are redundant with the weapon's base attack)
       for (const [id, action] of Object.entries(detectedActions)) {
@@ -2032,7 +2052,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       fullDescription = StatblockImporter.wrapDiceRolls(fullDescription);
 
       // Detect actions in description
-      const detectedActions = StatblockImporter.detectActionsInDescription(fullDescription);
+      const detectedActions = StatblockImporter.detectActionsInDescription(fullDescription, name);
 
       // --- RESULT ---
       const result = {
@@ -2455,7 +2475,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
           currentFeature.system.description = finalDesc;
 
           // Detect actions in description and add them to system.actions
-          const detectedActions = StatblockImporter.detectActionsInDescription(finalDesc);
+          const detectedActions = StatblockImporter.detectActionsInDescription(finalDesc, currentFeature.name);
 
           // Add detected actions to feature if any were found
           if (Object.keys(detectedActions).length > 0) {
