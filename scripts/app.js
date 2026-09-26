@@ -6,7 +6,7 @@
  * it under the terms of the GNU General Public License version 3.
  */
 
-import { MODULE_ID } from "./constants.js";
+import { MODULE_ID, FEATURE_ICON_DEFAULTS } from "./constants.js";
 import { StatblockConfig } from "./config.js";
 import { TEMPLATES } from "./templates.js";
 import { FeatureCodeDialog } from "./code-dialog.js";
@@ -247,58 +247,36 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
           });
       }
 
-      // Feature Icon: Adversary
-      if (!game.settings.settings.has(`${MODULE_ID}.featureIconAdversary`)) {
-          game.settings.register(MODULE_ID, "featureIconAdversary", {
-              name: "Feature Icon (Adversary)",
+      // Feature icons per featureForm (passive/action/reaction)
+      if (!game.settings.settings.has(`${MODULE_ID}.featureIcons`)) {
+          game.settings.register(MODULE_ID, "featureIcons", {
+              name: "Feature Icons",
               scope: "world",
               config: false,
-              type: String,
-              default: "icons/magic/symbols/star-solid-gold.webp"
+              type: Object,
+              default: FEATURE_ICON_DEFAULTS
           });
       }
 
-      // Feature Icon: Environment
-      if (!game.settings.settings.has(`${MODULE_ID}.featureIconEnvironment`)) {
-          game.settings.register(MODULE_ID, "featureIconEnvironment", {
-              name: "Feature Icon (Environment)",
+      // Feature icon source for actor imports: "type" (per featureForm) or "portrait" (actor image)
+      if (!game.settings.settings.has(`${MODULE_ID}.featureIconSource`)) {
+          game.settings.register(MODULE_ID, "featureIconSource", {
+              name: "Feature Icon Source",
               scope: "world",
               config: false,
               type: String,
-              default: "icons/environment/wilderness/cave-entrance.webp"
+              default: "type"
           });
       }
 
-      // Feature Icon: Feature (standalone Item mode)
-      if (!game.settings.settings.has(`${MODULE_ID}.featureIconFeature`)) {
-          game.settings.register(MODULE_ID, "featureIconFeature", {
-              name: "Feature Icon (Feature Item)",
-              scope: "world",
-              config: false,
-              type: String,
-              default: "icons/magic/symbols/star-solid-gold.webp"
-          });
-      }
-
-      // Use actor portrait for adversary features
-      if (!game.settings.settings.has(`${MODULE_ID}.featureIconMatchAdversary`)) {
-          game.settings.register(MODULE_ID, "featureIconMatchAdversary", {
-              name: "Feature Icon matches Adversary portrait",
+      // Also replace the icon of features pulled from compendiums
+      if (!game.settings.settings.has(`${MODULE_ID}.featureIconOverrideCompendium`)) {
+          game.settings.register(MODULE_ID, "featureIconOverrideCompendium", {
+              name: "Override Compendium Feature Icons",
               scope: "world",
               config: false,
               type: Boolean,
-              default: false
-          });
-      }
-
-      // Use actor portrait for environment features
-      if (!game.settings.settings.has(`${MODULE_ID}.featureIconMatchEnvironment`)) {
-          game.settings.register(MODULE_ID, "featureIconMatchEnvironment", {
-              name: "Feature Icon matches Environment portrait",
-              scope: "world",
-              config: false,
-              type: Boolean,
-              default: false
+              default: true
           });
       }
   }
@@ -492,6 +470,17 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
   }
 
   /**
+   * Icon for a feature item based on its featureForm (passive/action/reaction).
+   * @param {string} featureForm
+   * @returns {string}
+   */
+  static getFeatureIcon(featureForm) {
+      const icons = game.settings.get(MODULE_ID, "featureIcons");
+      // Compendium items may carry a featureForm outside the three known values
+      return icons[featureForm] ?? icons.passive;
+  }
+
+  /**
    * Helper to determine the default image based on mode and subtype (actorType or item subType)
    */
   static _getDefaultImage(mode, subtype = null) {
@@ -499,11 +488,6 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       if (mode === "consumable") return "icons/consumables/potions/potion-flask-corled-pink-red.webp";
       if (mode === "weapon") return "icons/weapons/swords/sword-guard-flanged-purple.webp";
       if (mode === "armor") return "icons/equipment/chest/breastplate-banded-leather-purple.webp";
-      if (mode === "feature") {
-          return game.settings.get(MODULE_ID, "featureIconFeature")
-              || "icons/magic/symbols/star-solid-gold.webp";
-      }
-      
       if (mode === "domainCard") {
           if (subtype === "grimoire") return "icons/sundries/books/book-embossed-spiral-purple-white.webp";
           if (subtype === "ability") return "icons/magic/control/silhouette-hold-change-blue.webp";
@@ -1004,16 +988,15 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
 
                 // Determine portrait override for feature icon, if the matching option is active
                 const isEnvironment = result.actorType === "environment";
-                const matchAdversary = game.settings.get(MODULE_ID, "featureIconMatchAdversary");
-                const matchEnvironment = game.settings.get(MODULE_ID, "featureIconMatchEnvironment");
-                const usePortrait = isEnvironment ? matchEnvironment : matchAdversary;
+                const usePortrait = game.settings.get(MODULE_ID, "featureIconSource") === "portrait";
+                const overrideCompendium = game.settings.get(MODULE_ID, "featureIconOverrideCompendium");
                 // Use the actor's actual portrait as the feature icon
                 const portraitImg = usePortrait ? (finalImg || defaultActorImg) : null;
 
                 // Apply portrait override to embedded items before actor creation
                 if (portraitImg && result.items?.length > 0) {
                     for (const item of result.items) {
-                        if (item.flags?.dhImporter?.isCompendium !== true) {
+                        if (item.flags?.dhImporter?.isCompendium !== true || overrideCompendium) {
                             item.img = portraitImg;
                         }
                     }
@@ -1672,7 +1655,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       // Wrap dice rolls in [[/r ]] format
       description = StatblockImporter.wrapDiceRolls(description);
 
-      const img = StatblockImporter._getDefaultImage("feature");
+      const img = StatblockImporter.getFeatureIcon(featureForm);
 
       // Detect actions in description
       const detectedActions = StatblockImporter.detectActionsInDescription(description, name);
@@ -2441,6 +2424,9 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
                   if (doc) {
                       const itemData = doc.toObject();
                       foundry.utils.mergeObject(itemData, { flags: { dhImporter: { isCompendium: true } } });
+                      if (game.settings.get(MODULE_ID, "featureIconOverrideCompendium")) {
+                          itemData.img = StatblockImporter.getFeatureIcon(itemData.system?.featureForm);
+                      }
                       items.push(itemData);
                       return;
                   }
@@ -2503,9 +2489,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
               currentFeature = {
                   name: featureName,
                   type: "feature",
-                  img: actorType === "environment"
-                      ? (game.settings.get(MODULE_ID, "featureIconEnvironment") || "icons/environment/wilderness/cave-entrance.webp")
-                      : (game.settings.get(MODULE_ID, "featureIconAdversary") || "icons/magic/symbols/star-solid-gold.webp"),
+                  img: StatblockImporter.getFeatureIcon(featureMatch[2].toLowerCase()),
                   system: {
                       featureForm: featureMatch[2].toLowerCase(),
                       description: featureDesc ? `<p>${featureDesc}</p>` : ""
@@ -2551,7 +2535,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
           items.push({
               name: "Horde",
               type: "feature",
-              img: "icons/creatures/magical/humanoid-silhouette-aliens-green.webp",
+              img: StatblockImporter.getFeatureIcon("passive"),
               system: {
                   featureForm: "passive",
                   description: "When the @Lookup[@name] have marked half or more of their HP, their standard attack deals @Lookup[@system.typeData.hordeDamage] @Lookup[@system.attackDamageType] damage instead."

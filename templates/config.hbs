@@ -105,71 +105,39 @@
 
     {{!-- Aba: Icons --}}
     <div class="dh-config-tab-content" data-tab="icons">
-        <p class="notes dh-config-notes dh-config-notes--general"><strong>Feature Icons:</strong> Default icons used for features created during import.</p>
+        <p class="notes dh-config-notes dh-config-notes--general"><strong>Feature Icons:</strong> Default icons used for features created during import, chosen by feature type.</p>
 
-        {{!-- Adversary Features --}}
-        <p class="hint" style="font-weight:bold; margin-bottom:4px; color: var(--color-text-light-highlight);">Adversary Features</p>
-
+        {{#each featureIcons}}
         <div class="form-group">
-            <label>Feature Icon</label>
+            <label>{{label}}</label>
             <div class="dh-icon-picker-row">
-                <img class="dh-icon-preview" data-target="featureIconAdversary"
-                     src="{{featureIconAdversary}}" title="Current icon">
-                <input type="text" name="featureIconAdversary" value="{{featureIconAdversary}}">
-                <button type="button" class="dh-icon-picker-btn" data-target="featureIconAdversary">
+                <img class="dh-icon-preview" data-target="featureIcons.{{form}}"
+                     src="{{src}}" title="Current icon">
+                <input type="text" name="featureIcons.{{form}}" value="{{src}}">
+                <button type="button" class="dh-icon-picker-btn" data-target="featureIcons.{{form}}">
                     <i class="fas fa-file-image"></i>
                 </button>
             </div>
+        </div>
+        {{/each}}
+
+        <hr class="dh-config-separator">
+
+        <div class="form-group">
+            <label for="featureIconSource">Adversary/Environment Feature Icon</label>
+            <select name="featureIconSource">
+                <option value="type" {{#if (eq featureIconSource "type")}}selected{{/if}}>Icon by feature type</option>
+                <option value="portrait" {{#if (eq featureIconSource "portrait")}}selected{{/if}}>Actor portrait</option>
+            </select>
+            <p class="hint dh-config-hint">Actor portrait replaces the type icons for features embedded in imported adversaries and environments. Standalone feature imports always use the type icons.</p>
         </div>
 
         <div class="form-group">
             <label class="checkbox" style="font-weight:normal; display:flex; align-items:center; gap:8px;">
-                <input type="checkbox" name="featureIconMatchAdversary" {{checked featureIconMatchAdversary}}>
-                <span>Use actor portrait as feature icon</span>
+                <input type="checkbox" name="featureIconOverrideCompendium" {{checked featureIconOverrideCompendium}}>
+                <span>Apply to compendium features</span>
             </label>
-            <p class="hint dh-config-hint">When enabled, each feature's icon will match the portrait image of the adversary being imported.</p>
-        </div>
-
-        <hr class="dh-config-separator">
-
-        {{!-- Environment Features --}}
-        <p class="hint" style="font-weight:bold; margin-bottom:4px; color: var(--color-text-light-highlight);">Environment Features</p>
-
-        <div class="form-group">
-            <label>Feature Icon</label>
-            <div class="dh-icon-picker-row">
-                <img class="dh-icon-preview" data-target="featureIconEnvironment"
-                     src="{{featureIconEnvironment}}" title="Current icon">
-                <input type="text" name="featureIconEnvironment" value="{{featureIconEnvironment}}">
-                <button type="button" class="dh-icon-picker-btn" data-target="featureIconEnvironment">
-                    <i class="fas fa-file-image"></i>
-                </button>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label class="checkbox" style="font-weight:normal; display:flex; align-items:center; gap:8px;">
-                <input type="checkbox" name="featureIconMatchEnvironment" {{checked featureIconMatchEnvironment}}>
-                <span>Use actor portrait as feature icon</span>
-            </label>
-            <p class="hint dh-config-hint">When enabled, each feature's icon will match the portrait image of the environment being imported.</p>
-        </div>
-
-        <hr class="dh-config-separator">
-
-        {{!-- Standalone Feature Items --}}
-        <p class="hint" style="font-weight:bold; margin-bottom:4px; color: var(--color-text-light-highlight);">Feature Items (standalone import)</p>
-
-        <div class="form-group">
-            <label>Feature Icon</label>
-            <div class="dh-icon-picker-row">
-                <img class="dh-icon-preview" data-target="featureIconFeature"
-                     src="{{featureIconFeature}}" title="Current icon">
-                <input type="text" name="featureIconFeature" value="{{featureIconFeature}}">
-                <button type="button" class="dh-icon-picker-btn" data-target="featureIconFeature">
-                    <i class="fas fa-file-image"></i>
-                </button>
-            </div>
+            <p class="hint dh-config-hint">When enabled, features matched from a compendium also receive the icon above instead of their original artwork. The compendium itself is not changed.</p>
         </div>
     </div>
 

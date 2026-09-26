@@ -1,3 +1,10 @@
+# 0.3.5
+
+- [Changed] Feature icons are now chosen by feature type ([#6](https://github.com/brunocalado/dh-statblock-importer/issues/6)). The Icons tab has one icon each for Passive, Action and Reaction, used by adversary, environment and standalone feature imports alike, so a sheet shows at a glance which features are passive or reactions. The separate Adversary, Environment and Feature Item icons are gone; previously customised icons reset to the new defaults.
+- [Changed] "Use actor portrait as feature icon" is now a single "Adversary/Environment Feature Icon" choice, "Icon by feature type" or "Actor portrait", instead of one checkbox per actor type.
+- [Added] "Apply to compendium features" option, on by default. Features matched from a compendium also get the type icon (or the portrait) instead of their original artwork. The compendium itself is not changed.
+- [Changed] The Horde feature built for horde adversaries uses the Passive icon instead of its own fixed icon.
+
 # 0.3.4
 
 - [Added] Countdown actions ([#7](https://github.com/brunocalado/dh-statblock-importer/issues/7)). `Countdown (6)`, `Countdown (1d8)`, `Countdown (Loop 1d6)`, `Countdown (Increasing 4)` and `Countdown (Decreasing 8)` in a description create a "Start Countdown" action. It adds an encounter countdown named after the feature to the tracker and rolls the start value when it is a dice formula. It is ticked down manually, because the text does not reliably say what makes a countdown tick. `Countdown (see "...")` or a countdown with no value creates nothing.

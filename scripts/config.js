@@ -138,11 +138,14 @@ export class StatblockConfig extends HandlebarsApplicationMixin(ApplicationV2) {
         const domainCardFolderName = game.settings.get(MODULE_ID, "domainCardFolderName");
         const separatorMode = game.settings.get(MODULE_ID, "separatorMode") || "blankLine";
 
-        const featureIconAdversary = game.settings.get(MODULE_ID, "featureIconAdversary");
-        const featureIconEnvironment = game.settings.get(MODULE_ID, "featureIconEnvironment");
-        const featureIconFeature = game.settings.get(MODULE_ID, "featureIconFeature");
-        const featureIconMatchAdversary = game.settings.get(MODULE_ID, "featureIconMatchAdversary");
-        const featureIconMatchEnvironment = game.settings.get(MODULE_ID, "featureIconMatchEnvironment");
+        const icons = game.settings.get(MODULE_ID, "featureIcons");
+        const featureIcons = [
+            { form: "passive", label: "Passive", src: icons.passive },
+            { form: "action", label: "Action", src: icons.action },
+            { form: "reaction", label: "Reaction", src: icons.reaction }
+        ];
+        const featureIconSource = game.settings.get(MODULE_ID, "featureIconSource");
+        const featureIconOverrideCompendium = game.settings.get(MODULE_ID, "featureIconOverrideCompendium");
 
         return {
             featureCompendiums,
@@ -156,11 +159,9 @@ export class StatblockConfig extends HandlebarsApplicationMixin(ApplicationV2) {
             featureFolderName,
             domainCardFolderName,
             separatorMode,
-            featureIconAdversary,
-            featureIconEnvironment,
-            featureIconFeature,
-            featureIconMatchAdversary,
-            featureIconMatchEnvironment
+            featureIcons,
+            featureIconSource,
+            featureIconOverrideCompendium
         };
     }
 
@@ -198,21 +199,17 @@ export class StatblockConfig extends HandlebarsApplicationMixin(ApplicationV2) {
         if (domainCardFolderInput?.value) await game.settings.set(MODULE_ID, "domainCardFolderName", domainCardFolderInput.value);
         if (separatorModeInput?.value) await game.settings.set(MODULE_ID, "separatorMode", separatorModeInput.value);
 
-        const featureIconAdversaryInput = form.querySelector("input[name='featureIconAdversary']");
-        const featureIconEnvironmentInput = form.querySelector("input[name='featureIconEnvironment']");
-        const featureIconFeatureInput = form.querySelector("input[name='featureIconFeature']");
-        const featureIconMatchAdversaryInput = form.querySelector("input[name='featureIconMatchAdversary']");
-        const featureIconMatchEnvironmentInput = form.querySelector("input[name='featureIconMatchEnvironment']");
+        // Empty inputs keep the previously saved icon
+        const featureIcons = { ...game.settings.get(MODULE_ID, "featureIcons") };
+        for (const featureForm of ["passive", "action", "reaction"]) {
+            const val = form.querySelector(`input[name="featureIcons.${featureForm}"]`)?.value?.trim();
+            if (val) featureIcons[featureForm] = val;
+        }
+        await game.settings.set(MODULE_ID, "featureIcons", featureIcons);
 
-        const adversaryIconVal = featureIconAdversaryInput?.value?.trim();
-        if (adversaryIconVal) await game.settings.set(MODULE_ID, "featureIconAdversary", adversaryIconVal);
-        const environmentIconVal = featureIconEnvironmentInput?.value?.trim();
-        if (environmentIconVal) await game.settings.set(MODULE_ID, "featureIconEnvironment", environmentIconVal);
-        const featureIconVal = featureIconFeatureInput?.value?.trim();
-        if (featureIconVal) await game.settings.set(MODULE_ID, "featureIconFeature", featureIconVal);
-
-        await game.settings.set(MODULE_ID, "featureIconMatchAdversary", featureIconMatchAdversaryInput?.checked || false);
-        await game.settings.set(MODULE_ID, "featureIconMatchEnvironment", featureIconMatchEnvironmentInput?.checked || false);
+        const featureIconSourceInput = form.querySelector("select[name='featureIconSource']");
+        if (featureIconSourceInput?.value) await game.settings.set(MODULE_ID, "featureIconSource", featureIconSourceInput.value);
+        await game.settings.set(MODULE_ID, "featureIconOverrideCompendium", form.querySelector("input[name='featureIconOverrideCompendium']")?.checked || false);
 
         await game.settings.set(MODULE_ID, "configInitialized", true);
     }
