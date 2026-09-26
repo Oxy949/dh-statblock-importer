@@ -1,3 +1,20 @@
+# 0.3.3
+
+- Requires Daggerheart 2.10.6 or newer
+- "All Features" compendium rebuilt from the Daggerheart 2.10.6 adversaries
+## Schema update for Daggerheart 2.10.6
+
+- [Fixed] Horde adversaries imported without Horde HP or the half-HP damage swap. The system moved horde data from `hordeHp` and `damage.main.valueAlt` into `system.typeData` (`hordeHP`, `hordeDamage`), and the swap now comes from a flagged "Horde" feature whose effect replaces the standard attack damage. The system only creates that feature when an existing actor changes type, so the importer now builds it itself, replacing the `Horde (XdY)` text feature.
+- [Fixed] Dice attack bonuses such as `ATK: +2d4` lost the dice part. Since system 2.10.4 the attack bonus is a formula.
+- [Fixed] Positive attack bonuses showed as `++2` in the exporter and in the system's own sheet embed. The leading `+` is no longer stored.
+- [Fixed] Create Statblock now reads Horde HP and Horde damage from `typeData`, and fills in data lookups in feature text (e.g. the Horde damage and damage type).
+- [Changed] +Features no longer copies the Horde feature to the world, since it only works on its own horde actor.
+- [Changed] "All Features" compendium: the old `Horde (1d4+1)`-style entries are replaced by the system's single "Horde" feature (one per tier). Unused alternate damage (`valueAlt`) is now empty, matching 2.10.
+## Development
+
+- [Added] `tools/build-features.mjs` rebuilds the "All Features" compendium from the system's adversary pack, with no Foundry running and no manual drag-and-drop. Rebuilding against an unchanged system gives an identical pack.
+- [Added] License header in every script and stylesheet.
+
 # 0.3.2
 
 - Requires Daggerheart 2.9.1 or newer

@@ -1,3 +1,11 @@
+/*!
+ * Daggerheart: Stats Toolbox
+ * 2025 https://github.com/brunocalado
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 3.
+ */
+
 import { MODULE_ID } from "./constants.js";
 import { StatblockConfig } from "./config.js";
 import { TEMPLATES } from "./templates.js";
@@ -675,7 +683,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
           fullHtml += show("Actor Type", isEnvironment ? "Environment" : "Adversary");
           fullHtml += show("Tier", data.tier);
           fullHtml += show("Type", data.type);
-          if (data.type === "horde") fullHtml += show("Horde HP", data.hordeHp);
+          if (data.type === "horde") fullHtml += show("Horde HP", data.typeData?.hordeHP);
           fullHtml += show("Difficulty", data.difficulty);
 
           if (!isEnvironment) {
@@ -697,7 +705,6 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
              // Damage - dice and type separate
              let dmgDice = null;
              let dmgType = null;
-             let hordeDmg = null;
              const part = data.attack?.damage?.main;
              if (part) {
                  const dmgVal = part.value;
@@ -707,20 +714,10 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
                      dmgDice = `${dmgVal.flatMultiplier > 1 ? dmgVal.flatMultiplier : ""}${dmgVal.dice}${dmgVal.bonus ? (dmgVal.bonus > 0 ? "+"+dmgVal.bonus : dmgVal.bonus) : ""}`;
                  }
                  if (part.type?.length > 0) dmgType = part.type.join("/");
-
-                 // Horde Damage (valueAlt)
-                 if (data.type === "horde" && part.valueAlt) {
-                     const altVal = part.valueAlt;
-                     if (altVal.custom?.enabled && altVal.custom?.formula) {
-                         hordeDmg = altVal.custom.formula;
-                     } else if (altVal.dice) {
-                         hordeDmg = `${altVal.flatMultiplier > 1 ? altVal.flatMultiplier : ""}${altVal.dice}${altVal.bonus ? (altVal.bonus > 0 ? "+"+altVal.bonus : altVal.bonus) : ""}`;
-                     }
-                 }
              }
              fullHtml += show("Damage", dmgDice);
              fullHtml += show("Damage Type", dmgType);
-             if (data.type === "horde") fullHtml += show("Horde Damage", hordeDmg);
+             if (data.type === "horde") fullHtml += show("Horde Damage", data.typeData?.hordeDamage);
 
              // Experiences
              const expEntries = Object.values(data.experiences || {});
@@ -1042,6 +1039,8 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
                     for (const featureItem of result.items) {
                         // Skip compendium features (they already exist)
                         if (featureItem.flags?.dhImporter?.isCompendium === true) continue;
+                        // The horde feature only works embedded in its horde actor (flag + effect reading typeData)
+                        if (featureItem.flags?.[CONFIG.DH.id]?.[CONFIG.DH.FLAGS.actorFlags.hordeFeature]) continue;
 
                         // Determine feature type (action, reaction, passive)
                         const featureType = featureItem.system?.featureForm || "passive";
@@ -2155,7 +2154,8 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
               const hordeMatch = rawType.match(/Horde\s*\((\d+)\/HP\)/i);
               if (hordeMatch) {
                   systemData.type = "horde";
-                  systemData.hordeHp = parseInt(hordeMatch[1], 10);
+                  // System 2.10 moved horde data into the `typeData` sub-model (was `hordeHp` + `damage.main.valueAlt`).
+                  systemData.typeData = { type: "horde", hordeHP: parseInt(hordeMatch[1], 10) };
               } else {
                   systemData.type = rawType.toLowerCase();
               }
@@ -2337,9 +2337,11 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
           const stressMatch = segment.match(/Stress:\s*(\d+)/i);
           if (stressMatch) systemData.resources.stress.max = parseInt(stressMatch[1], 10);
 
-          const atkMatch = segment.match(/^ATK:\s*([+\-\u2013\u2014\u2212]?\s*\d+)/i);
+          // Since system 2.10.4 the attack bonus is a formula string, so dice bonuses like "+2d4" are valid.
+          const atkMatch = segment.match(/^ATK:\s*([+\-\u2013\u2014\u2212]?\s*\d+(?:d\d+)?)/i);
           if (atkMatch) {
-              let bonusClean = atkMatch[1].replace(/[\u2013\u2014\u2212]/g, "-").replace(/\s/g, "");
+              // Drop a leading "+": the system's signedNumber() would otherwise render it as "++2".
+              let bonusClean = atkMatch[1].replace(/[\u2013\u2014\u2212]/g, "-").replace(/\s/g, "").replace(/^\+/, "");
               systemData.attack.roll.bonus = bonusClean;
           }
 
@@ -2512,19 +2514,58 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       }
       if (currentFeature) await pushCurrentFeature();
 
-      if (actorType === "adversary" && systemData.type === "horde" && systemData.attack.damage.main) {
-          const hordeFeature = items.find(i => /^Horde\s*\(.+\)$/i.test(i.name));
-          if (hordeFeature) {
-              const diceMatch = hordeFeature.name.match(/^Horde\s*\(\s*(\d+)d(\d+)([+-]\d+)?\s*\)$/i);
-              if (diceMatch) {
-                  const flatMultiplier = parseInt(diceMatch[1], 10);
-                  const dice = `d${diceMatch[2]}`;
-                  const bonus = diceMatch[3] ? parseInt(diceMatch[3], 10) : null;
-                  systemData.attack.damage.main.valueAlt = {
-                      multiplier: "flat", flatMultiplier, dice, bonus, custom: { enabled: false, formula: "" }
-                  };
-              }
+      if (actorType === "adversary" && systemData.type === "horde") {
+          systemData.typeData ??= { type: "horde" };
+
+          // System 2.10 drives the horde damage swap from a flagged "Horde" feature whose effect replaces the
+          // standard attack damage with `typeData.hordeDamage` at half HP. The system only creates that feature
+          // when an existing actor's type changes, so an actor created directly as a horde needs it supplied.
+          // Mirrors the feature built in DhpAdversary#_onUpdate and replaces the plain "Horde (XdY)" text feature.
+          const hordeIndex = items.findIndex(i => /^Horde\s*(\(.+\))?$/i.test(i.name));
+          if (hordeIndex !== -1) {
+              const diceMatch = items[hordeIndex].name.match(/^Horde\s*\(\s*(\d+)d(\d+)([+-]\d+)?\s*\)$/i);
+              if (diceMatch) systemData.typeData.hordeDamage = `${diceMatch[1]}d${diceMatch[2]}${diceMatch[3] ?? ""}`;
+              items.splice(hordeIndex, 1);
           }
+
+          items.push({
+              name: "Horde",
+              type: "feature",
+              img: "icons/creatures/magical/humanoid-silhouette-aliens-green.webp",
+              system: {
+                  featureForm: "passive",
+                  description: "When the @Lookup[@name] have marked half or more of their HP, their standard attack deals @Lookup[@system.typeData.hordeDamage] @Lookup[@system.attackDamageType] damage instead."
+              },
+              flags: {
+                  [CONFIG.DH.id]: { [CONFIG.DH.FLAGS.actorFlags.hordeFeature]: true },
+                  dhImporter: { isCompendium: false }
+              },
+              effects: [{
+                  name: "Horde",
+                  img: "icons/magic/movement/chevrons-down-yellow.webp",
+                  showIcon: 2,
+                  system: {
+                      conditionals: [{
+                          type: "dataCompare",
+                          key: "system.resources.hitPoints.value",
+                          comparator: "greaterEquals",
+                          value: "@system.resources.hitPoints.max / 2"
+                      }],
+                      changes: [{
+                          type: "standardAttack",
+                          value: {
+                              name: "",
+                              damageTypes: [],
+                              attackRange: null,
+                              trait: null,
+                              damageFormula: "@system.typeData.hordeDamage",
+                              img: null
+                          },
+                          priority: 0
+                      }]
+                  }
+              }]
+          });
       }
 
       return { name, systemData, items, actorType };

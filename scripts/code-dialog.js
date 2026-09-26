@@ -1,3 +1,11 @@
+/*!
+ * Daggerheart: Stats Toolbox
+ * 2025 https://github.com/brunocalado
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 3.
+ */
+
 import { MODULE_ID } from "./constants.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;

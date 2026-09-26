@@ -1,3 +1,11 @@
+/*!
+ * Daggerheart: Stats Toolbox
+ * 2025 https://github.com/brunocalado
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 3.
+ */
+
 import { MODULE_ID } from "./constants.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -223,8 +231,8 @@ export class StatblockExporter extends HandlebarsApplicationMixin(ApplicationV2)
         // Tier and Type (special format for Horde)
         const tier = sys.tier || 1;
         const type = sys.type ? (sys.type.charAt(0).toUpperCase() + sys.type.slice(1)) : "Standard";
-        if (sys.type === "horde" && sys.hordeHp) {
-            lines.push(`Tier ${tier} Horde (${sys.hordeHp}/HP)`);
+        if (sys.type === "horde" && sys.typeData?.hordeHP) {
+            lines.push(`Tier ${tier} Horde (${sys.typeData.hordeHP}/HP)`);
         } else {
             lines.push(`Tier ${tier} ${type}`);
         }
@@ -263,9 +271,10 @@ export class StatblockExporter extends HandlebarsApplicationMixin(ApplicationV2)
             const atkParts = [];
 
             // ATK bonus
-            if (attack.roll?.bonus !== undefined && attack.roll?.bonus !== null) {
-                const bonus = attack.roll.bonus;
-                atkParts.push(`ATK: ${bonus >= 0 ? "+" + bonus : bonus}`);
+            // System 2.10.4 made the bonus a formula string ("2", "-1", "2d4"), so sign it textually.
+            if (attack.roll?.bonus !== undefined && attack.roll?.bonus !== null && attack.roll.bonus !== "") {
+                const bonus = String(attack.roll.bonus).trim();
+                atkParts.push(`ATK: ${/^[+-]/.test(bonus) ? bonus : "+" + bonus}`);
             }
 
             // Weapon name and range
@@ -305,33 +314,20 @@ export class StatblockExporter extends HandlebarsApplicationMixin(ApplicationV2)
             for (const feature of features) {
                 let featureName = feature.name;
                 
-                // Logic to append Horde damage if actor is horde and feature is named "Horde"
-                if (sys.type === "horde" && featureName.trim().toLowerCase() === "horde") {
-                    // `valueAlt` is a non-nullable embedded model, so it always exists once
-                    // `main` is populated — gate on `main`, which is null when the attack
-                    // carries no damage at all.
-                    const val = sys.attack?.damage?.main?.valueAlt;
-                    if (val) {
-                        let diceStr = "";
-                        
-                        if (val.custom?.enabled && val.custom?.formula) {
-                            diceStr = val.custom.formula;
-                        } else if (val.dice) {
-                            const mult = val.flatMultiplier ?? 1;
-                            const bonus = val.bonus ? (val.bonus > 0 ? `+${val.bonus}` : `${val.bonus}`) : "";
-                            diceStr = `${mult}${val.dice}${bonus}`;
-                        }
-                        
-                        // Append dice to feature name
-                        if (diceStr) {
-                            featureName = `Horde (${diceStr})`;
-                        }
-                    }
+                // Logic to append Horde damage if actor is horde and feature is named "Horde".
+                // System 2.10 stores it as a formula in `typeData.hordeDamage` (was `damage.main.valueAlt`).
+                const hordeDamage = sys.typeData?.hordeDamage;
+                if (sys.type === "horde" && featureName.trim().toLowerCase() === "horde" && hordeDamage) {
+                    featureName = `Horde (${hordeDamage})`;
                 }
 
                 const featureForm = feature.system.featureForm || "passive";
                 const formLabel = featureForm.charAt(0).toUpperCase() + featureForm.slice(1);
-                const desc = this._stripHtml(feature.system.description || "", actorName);
+                // Resolve data lookups such as the system horde feature's
+                // @Lookup[@system.typeData.hordeDamage]; unresolved ones are left for _stripHtml.
+                const rawDesc = (feature.system.description || "").replace(/@Lookup\[@(system\.[^\]]+)\]/g,
+                    (match, path) => foundry.utils.getProperty(actor, path) ?? match);
+                const desc = this._stripHtml(rawDesc, actorName);
                 lines.push(`${featureName} - ${formLabel}: ${desc}`);
             }
         }
