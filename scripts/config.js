@@ -137,6 +137,7 @@ export class StatblockConfig extends HandlebarsApplicationMixin(ApplicationV2) {
         const featureFolderName = game.settings.get(MODULE_ID, "featureFolderName");
         const domainCardFolderName = game.settings.get(MODULE_ID, "domainCardFolderName");
         const separatorMode = game.settings.get(MODULE_ID, "separatorMode") || "blankLine";
+        const secretPrompts = game.settings.get(MODULE_ID, "secretPrompts");
 
         const icons = game.settings.get(MODULE_ID, "featureIcons");
         const featureIcons = [
@@ -159,6 +160,7 @@ export class StatblockConfig extends HandlebarsApplicationMixin(ApplicationV2) {
             featureFolderName,
             domainCardFolderName,
             separatorMode,
+            secretPrompts,
             featureIcons,
             featureIconSource,
             featureIconOverrideCompendium
@@ -198,6 +200,8 @@ export class StatblockConfig extends HandlebarsApplicationMixin(ApplicationV2) {
         if (featureFolderInput?.value) await game.settings.set(MODULE_ID, "featureFolderName", featureFolderInput.value);
         if (domainCardFolderInput?.value) await game.settings.set(MODULE_ID, "domainCardFolderName", domainCardFolderInput.value);
         if (separatorModeInput?.value) await game.settings.set(MODULE_ID, "separatorMode", separatorModeInput.value);
+        const secretPromptsInput = form.querySelector("select[name='secretPrompts']");
+        if (secretPromptsInput?.value) await game.settings.set(MODULE_ID, "secretPrompts", secretPromptsInput.value);
 
         // Empty inputs keep the previously saved icon
         const featureIcons = { ...game.settings.get(MODULE_ID, "featureIcons") };

@@ -20,6 +20,8 @@ Effortlessly import **Adversaries** and **Environments** and **more** into Found
 
 * **Mass Import:** You can paste how many statblocks you want.
 
+* **GM Prompts:** The prompt questions that end environment features, and any text wrapped in `*asterisks*`, become GM-only secret blocks.
+
 ### 🔍 Advanced Lookups
 
 * **Feature Linking:** Checks your configured Compendiums for existing features.
@@ -33,6 +35,8 @@ Effortlessly import **Adversaries** and **Environments** and **more** into Found
 * **Visual Feedback:** Clearly see which features are new and which are linked from Compendiums.
 
 * **Organized in Folders:** Imports are automatically organized into folders.
+
+* **Feature Icons:** Pick an icon for Passive, Action and Reaction features, so a sheet shows at a glance which features are passive or reactions.
 
 <p align="center"><img width="800" src="docs/folders.webp"></p>
 

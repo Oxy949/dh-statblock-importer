@@ -1,3 +1,12 @@
+# 0.3.6
+
+- [Added] GM prompts become secret blocks ([#5](https://github.com/brunocalado/dh-statblock-importer/issues/5)). Text wrapped in `*asterisks*` in a feature description is stored as a secret block, the GM-only section Foundry reveals on demand, in adversary, environment and standalone feature imports. In environments, the questions that end a feature are detected on their own when no marker is used, since the italics that set them apart are lost when pasting from a PDF. Checked against all 197 environment features of the Daggerheart system: 195 get exactly the official secret text; the other two differ only where the official secret is a rules note rather than a question, or where the actor name is replaced by a lookup.
+- [Added] "GM Prompts as Secrets" setting in Configure → General: "Marker + environment questions" (default), "*Marker* only", or "Off". Off imports descriptions exactly as before.
+- [Changed] Create Statblock writes secret blocks back as `*...*`, so an exported statblock re-imports with its secrets.
+- [Changed] Rules text and actions are read without the secret part, so a question such as "how much damage…" no longer creates an action.
+- [Fixed] Features with two or more bullet points lost the first bullet and produced nested paragraphs. A line continuing a description reopened the first paragraph instead of the last one.
+- [Changed] Instructions journal: Environment, Adversaries and Feature pages document secret prompts, and the formatting prompt in "How to Use Unformatted Stats" asks for GM prompts in `*asterisks*`.
+
 # 0.3.5
 
 - [Changed] Feature icons are now chosen by feature type ([#6](https://github.com/brunocalado/dh-statblock-importer/issues/6)). The Icons tab has one icon each for Passive, Action and Reaction, used by adversary, environment and standalone feature imports alike, so a sheet shows at a glance which features are passive or reactions. The separate Adversary, Environment and Feature Item icons are gone; previously customised icons reset to the new defaults.

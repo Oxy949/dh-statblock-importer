@@ -269,6 +269,17 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
           });
       }
 
+      // GM prompts as secret blocks: "auto" (marker + trailing questions in environments), "marker" or "off"
+      if (!game.settings.settings.has(`${MODULE_ID}.secretPrompts`)) {
+          game.settings.register(MODULE_ID, "secretPrompts", {
+              name: "GM Prompts as Secrets",
+              scope: "world",
+              config: false,
+              type: String,
+              default: "auto"
+          });
+      }
+
       // Also replace the icon of features pulled from compendiums
       if (!game.settings.settings.has(`${MODULE_ID}.featureIconOverrideCompendium`)) {
           game.settings.register(MODULE_ID, "featureIconOverrideCompendium", {
@@ -478,6 +489,57 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
       const icons = game.settings.get(MODULE_ID, "featureIcons");
       // Compendium items may carry a featureForm outside the three known values
       return icons[featureForm] ?? icons.passive;
+  }
+
+  /**
+   * Pull GM prompts out of a feature description so they can be stored as a secret block.
+   * `*text*` marks a prompt explicitly. With autoDetect (environments), the trailing run of
+   * questions in the last paragraph is taken instead — every official environment feature
+   * ends with its prompt questions, and the italics that set them apart are lost on paste.
+   * @param {string} html        Feature description, plain or as <p> paragraphs
+   * @param {boolean} autoDetect Whether to detect trailing questions when no marker is present
+   * @returns {{html: string, secret: string}}
+   */
+  static extractSecretPrompt(html, autoDetect) {
+      const mode = game.settings.get(MODULE_ID, "secretPrompts");
+      if (mode === "off") return { html, secret: "" };
+
+      const parts = [];
+      // [^*<] keeps a marker from spanning paragraph tags; an unmatched asterisk stays literal
+      html = html.replace(/\*([^*<]+)\*/g, (match, text) => {
+          parts.push(text.trim());
+          return "";
+      });
+
+      if (parts.length === 0 && autoDetect && mode === "auto") {
+          html = html.replace(/<p>((?:(?!<p>)[\s\S])*)<\/p>\s*$/, (match, text, offset) => {
+              // Besides sentence ends, split before bullets and before a capitalised question word: a
+              // bullet item has no closing period, so the question that follows would otherwise join it
+              const sentences = text.trim().split(/(?<=[.!?]["”’)]*)\s+|\s+(?=[•–-]\s)|(?<=[\p{Ll}\d,)])\s+(?=(?:Who|Whom|Whose|What|Which|Where|When|Why|How|Do|Does|Did|Is|Are|Was|Were|Can|Could|Will|Would|Should|Have|Has|Had)\b)/u);
+              let i = sentences.length;
+              while (i > 0 && /\?["”’)]*$/.test(sentences[i - 1])) i--;
+              if (i === sentences.length) return match;
+              // A description made only of questions is the rule text itself, not a prompt
+              if (i === 0 && !html.slice(0, offset).replace(/<[^>]+>/g, "").trim()) return match;
+              parts.push(sentences.slice(i).join(" "));
+              const rest = sentences.slice(0, i).join(" ");
+              return rest ? `<p>${rest}</p>` : "";
+          });
+      }
+
+      if (parts.length === 0) return { html, secret: "" };
+      html = html.replace(/<p>\s*<\/p>/g, "").replace(/ {2,}/g, " ").replace(/\s+<\/p>/g, "</p>").trim();
+      return { html, secret: parts.join(" ") };
+  }
+
+  /**
+   * Secret block in the markup Foundry's editor produces; the id is what lets it be revealed.
+   * @param {string} text
+   * @returns {string}
+   */
+  static secretBlock(text) {
+      if (!text) return "";
+      return `<section id="secret-${foundry.utils.randomID()}" class="secret"><p><em>${text}</em></p></section>`;
   }
 
   /**
@@ -1650,10 +1712,11 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
           featureForm = actionMatch[2].toLowerCase();
       }
 
-      let description = lines.length > 1 ? lines.slice(1).join(" ") : "";
+      const { html: publicDesc, secret } = StatblockImporter.extractSecretPrompt(
+          lines.length > 1 ? lines.slice(1).join(" ") : "", false);
 
       // Wrap dice rolls in [[/r ]] format
-      description = StatblockImporter.wrapDiceRolls(description);
+      let description = StatblockImporter.wrapDiceRolls(publicDesc);
 
       const img = StatblockImporter.getFeatureIcon(featureForm);
 
@@ -1666,7 +1729,7 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
           img,
           system: {
               featureForm: featureForm,
-              description: description
+              description: description + StatblockImporter.secretBlock(secret)
           }
       };
 
@@ -2435,7 +2498,9 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
               }
           }
           
-          let finalDesc = currentFeature.system.description;
+          const { html: publicDesc, secret } = StatblockImporter.extractSecretPrompt(
+              currentFeature.system.description, actorType === "environment");
+          let finalDesc = publicDesc;
           if (finalDesc.includes("•") || finalDesc.includes("- ")) {
               const lines = finalDesc.split("</p>").map(l => l.replace("<p>", "").trim()).filter(l => l);
               let listBuffer = [];
@@ -2458,9 +2523,9 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
           // Wrap dice rolls in [[/r ]] format
           finalDesc = StatblockImporter.wrapDiceRolls(finalDesc);
 
-          currentFeature.system.description = finalDesc;
+          currentFeature.system.description = finalDesc + StatblockImporter.secretBlock(secret);
 
-          // Detect actions in description and add them to system.actions
+          // Detect actions in description and add them to system.actions; the prompt is left out
           const detectedActions = StatblockImporter.detectActionsInDescription(finalDesc, currentFeature.name);
 
           // Add detected actions to feature if any were found
@@ -2505,7 +2570,8 @@ export class StatblockImporter extends HandlebarsApplicationMixin(ApplicationV2)
                       // First line of description (when format is "Name - Type" without colon)
                       desc = `<p>${cleanedLine}</p>`;
                   } else {
-                      desc = desc.replace("</p>", "");
+                      // Reopen the last paragraph; replacing the first </p> nested every later line into it
+                      desc = desc.replace(/<\/p>$/, "");
                       if (line.trim().startsWith("•") || line.trim().startsWith("- ")) {
                           desc += `</p><p>${cleanedLine}</p>`;
                       } else {

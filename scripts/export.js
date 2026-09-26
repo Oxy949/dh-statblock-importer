@@ -327,7 +327,7 @@ export class StatblockExporter extends HandlebarsApplicationMixin(ApplicationV2)
                 // @Lookup[@system.typeData.hordeDamage]; unresolved ones are left for _stripHtml.
                 const rawDesc = (feature.system.description || "").replace(/@Lookup\[@(system\.[^\]]+)\]/g,
                     (match, path) => foundry.utils.getProperty(actor, path) ?? match);
-                const desc = this._stripHtml(rawDesc, actorName);
+                const desc = this._stripHtml(this._markSecrets(rawDesc), actorName);
                 lines.push(`${featureName} - ${formLabel}: ${desc}`);
             }
         }
@@ -433,7 +433,7 @@ export class StatblockExporter extends HandlebarsApplicationMixin(ApplicationV2)
             for (const feature of features) {
                 const featureForm = feature.system.featureForm || "passive";
                 const formLabel = featureForm.charAt(0).toUpperCase() + featureForm.slice(1);
-                const desc = this._stripHtml(feature.system.description || "", actorName);
+                const desc = this._stripHtml(this._markSecrets(feature.system.description || ""), actorName);
                 lines.push(`${feature.name} - ${formLabel}: ${desc}`);
             }
         }
@@ -762,6 +762,17 @@ export class StatblockExporter extends HandlebarsApplicationMixin(ApplicationV2)
      * @param {string} actorName - The actor's name to replace @Lookup[@name] with
      * @returns {string}
      */
+    /**
+     * Turn secret blocks into the importer's *marker* so an exported statblock re-imports with its secrets.
+     * @param {string} html
+     * @returns {string}
+     */
+    _markSecrets(html) {
+        if (game.settings.get(MODULE_ID, "secretPrompts") === "off") return html;
+        return html.replace(/<section[^>]*class="secret"[^>]*>([\s\S]*?)<\/section>/g,
+            (match, inner) => ` *${inner.replace(/<[^>]+>/g, "").trim()}*`);
+    }
+
     _stripHtml(html, actorName = "") {
         if (!html) return "";
         // Replace common HTML patterns
