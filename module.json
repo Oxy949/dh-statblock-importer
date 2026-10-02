@@ -1,7 +1,7 @@
 {
   "id": "dh-statblock-importer",
   "title": "Daggerheart: Stats Toolbox",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "Import using a statblock.",
   "compatibility": {
     "minimum": "14",
@@ -56,9 +56,9 @@
       }
     ]
   },
-  "url": "https://github.com/brunocalado/dh-statblock-importer",
-  "manifest": "https://raw.githubusercontent.com/brunocalado/dh-statblock-importer/main/module.json",
-  "download": "https://codeload.github.com/brunocalado/dh-statblock-importer/zip/main",
+  "url": "https://github.com/oxy949/dh-statblock-importer",
+  "manifest": "https://raw.githubusercontent.com/oxy949/dh-statblock-importer/main/module.json",
+  "download": "https://codeload.github.com/oxy949/dh-statblock-importer/zip/main",
   "packs": [
     {
       "label": "DH_STATBLOCK_IMPORTER.Packs.allFeatures",

@@ -82,7 +82,7 @@ For the best results, ensure your text follows the recommended format.
 Install via the Foundry VTT Module browser or use this manifest link:
 
 ```
-https://raw.githubusercontent.com/brunocalado/dh-statblock-importer/main/module.json
+https://raw.githubusercontent.com/oxy949/dh-statblock-importer/main/module.json
 ```
 
 ## 📜 Changelog

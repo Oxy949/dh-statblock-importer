@@ -1,4 +1,4 @@
-# Unreleased
+# 0.3.7
 
 - [Fixed] Russian adversary statblocks now accept type-first tier lines such as `Стрелок 1-го тира`.
 - [Fixed] Localized physical and magical damage phrases are parsed correctly in base attacks.
